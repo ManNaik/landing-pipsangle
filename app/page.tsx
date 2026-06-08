@@ -4,7 +4,6 @@ import { MarketHours } from "./components/MarketHours";
 import { CommunityChats } from "./components/CommunityChats";
 
 const stats = [
-  { label: "Active Traders", value: "1200+" },
   { label: "Trades Executed", value: "15000+" },
   { label: "Win Rate", value: "72%" },
   { label: "Years Tested", value: "3+" },
@@ -201,26 +200,45 @@ export default function Home() {
   return (
     <div className="min-w-0">
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-zinc-800 px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(16,185,129,0.15),transparent)]" />
-        <div className="relative mx-auto max-w-4xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
+      <section className="relative flex min-h-[75vh] items-center overflow-hidden border-b border-zinc-800 px-4 py-20 sm:min-h-[80vh] sm:px-6 sm:py-28 lg:min-h-[88vh] lg:px-8 lg:py-32">
+        <div className="absolute inset-0" aria-hidden>
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="h-full w-full object-cover opacity-35"
+          >
+            <source src="/Bg-video.mp4" type="video/mp4" />
+          </video>
+        </div>
+        <div
+          className="absolute inset-0 bg-zinc-950/70"
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(16,185,129,0.2),transparent)]"
+          aria-hidden
+        />
+        <div className="relative z-10 mx-auto max-w-4xl text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.8)] sm:text-4xl md:text-5xl lg:text-6xl">
             Forex Signals & Automated Trading
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-400 sm:mt-6 sm:text-lg">
+          <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-200 drop-shadow-[0_2px_12px_rgba(0,0,0,0.7)] sm:mt-6 sm:text-lg">
             Trade smarter with professional signals or automate your trading
             account.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-4">
             <Link
               href="#forex-signals"
-              className="rounded-lg bg-emerald-500 px-6 py-3.5 text-base font-medium text-white transition hover:bg-emerald-600 min-h-[3rem] flex items-center justify-center sm:min-h-0"
+              className="rounded-lg bg-emerald-500 px-6 py-3.5 text-base font-medium text-white shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-600 min-h-[3rem] flex items-center justify-center sm:min-h-0"
             >
               View Signals
             </Link>
             <Link
               href="#automation"
-              className="rounded-lg border border-zinc-600 bg-transparent px-6 py-3.5 text-base font-medium text-white transition hover:border-zinc-500 hover:bg-zinc-800/50 min-h-[3rem] flex items-center justify-center sm:min-h-0"
+              className="rounded-lg border border-zinc-500/80 bg-zinc-950/60 px-6 py-3.5 text-base font-medium text-white shadow-lg shadow-black/40 backdrop-blur-sm transition hover:border-zinc-400 hover:bg-zinc-900/80 min-h-[3rem] flex items-center justify-center sm:min-h-0"
             >
               Automate Trading
             </Link>
@@ -659,7 +677,7 @@ export default function Home() {
       {/* Stats */}
       <section className="border-b border-zinc-800 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-3">
             {stats.map((s) => (
               <div
                 key={s.label}

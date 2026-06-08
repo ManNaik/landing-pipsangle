@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { LoginModal } from "./LoginModal";
 
 const navigation = [
   { name: "Home", url: "/" },
@@ -18,6 +19,7 @@ const navigation = [
 export function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLUListElement>(null);
   const [barStyle, setBarStyle] = useState({ left: 0, width: 0 });
@@ -107,12 +109,13 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link
-            href="/signup"
+          <button
+            type="button"
+            onClick={() => setLoginOpen(true)}
             className="hidden rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/20 min-h-[2.75rem] min-w-[2.75rem] md:inline-flex md:items-center md:justify-center"
           >
             Start Trading
-          </Link>
+          </button>
 
           {/* Mobile menu button */}
           <button
@@ -190,17 +193,21 @@ export function Header() {
             );
           })}
           <li className="mt-4 pt-2">
-            <Link
-              href="/signup"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-3.5 text-base font-medium text-white transition-all duration-200 hover:bg-emerald-600 min-h-[3rem] active:scale-[0.98]"
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setLoginOpen(true);
+              }}
+              className="flex w-full items-center justify-center rounded-lg bg-emerald-500 px-4 py-3.5 text-base font-medium text-white transition-all duration-200 hover:bg-emerald-600 min-h-[3rem] active:scale-[0.98]"
             >
               Start Trading
-            </Link>
+            </button>
           </li>
         </ul>
       </div>
 
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </header>
   );
 }
