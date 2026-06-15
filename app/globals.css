@@ -47,3 +47,27 @@ body {
 .animate-nav-item-fade {
   animation: nav-item-fade 0.35s ease-out both;
 }
+
+@keyframes broker-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.broker-ticker-track {
+  animation: broker-ticker 60s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .broker-ticker-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+    gap: 1rem;
+  }
+}

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 40" role="img" aria-label="Vantage">
+  <rect width="110" height="40" rx="8" fill="#042F2E"/>
+  <path fill="#14B8A6" d="M10 28L20 12l10 16h-5l-5-8.5L15 28h-5z"/>
+  <text x="66" y="25" text-anchor="middle" fill="#2DD4BF" font-family="Arial,sans-serif" font-size="16" font-weight="700">Vantage</text>
+</svg>

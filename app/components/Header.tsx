@@ -3,20 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import type { SiteConfig } from "../lib/types";
 import { LoginModal } from "./LoginModal";
 
-const navigation = [
-  { name: "Home", url: "/" },
-  // Removed dedicated nav items for Forex Signals & Automation –
-  // both are now sections on the homepage instead of separate pages.
-  { name: "Performance", url: "/trading-performance" },
-  { name: "Pricing", url: "/pricing" },
-  { name: "News", url: "/news" },
-  { name: "Blog", url: "/blog" },
-  { name: "FAQ", url: "/faq" },
-];
+type HeaderProps = {
+  siteConfig: SiteConfig;
+};
 
-export function Header() {
+export function Header({ siteConfig }: HeaderProps) {
+  const navigation = siteConfig.navigation;
+  const brandName = siteConfig.brand_name;
+  const ctaLabel = siteConfig.header_cta_label;
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -66,7 +63,7 @@ export function Header() {
       cancelAnimationFrame(t);
       window.removeEventListener("resize", updateBar);
     };
-  }, [pathname]);
+  }, [pathname, navigation]);
 
   return (
     <header
@@ -77,9 +74,9 @@ export function Header() {
         <Link
           href="/"
           className="text-lg font-bold tracking-tight text-white sm:text-xl min-w-[2.5rem] min-h-[2.5rem] flex items-center transition-opacity hover:opacity-90"
-          aria-label="PipAngel home"
+          aria-label={`${brandName} home`}
         >
-          PipAngel
+          {brandName}
         </Link>
 
         {/* Desktop nav */}
@@ -114,7 +111,7 @@ export function Header() {
             onClick={() => setLoginOpen(true)}
             className="hidden rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/20 min-h-[2.75rem] min-w-[2.75rem] md:inline-flex md:items-center md:justify-center"
           >
-            Start Trading
+            {ctaLabel}
           </button>
 
           {/* Mobile menu button */}
@@ -201,7 +198,7 @@ export function Header() {
               }}
               className="flex w-full items-center justify-center rounded-lg bg-emerald-500 px-4 py-3.5 text-base font-medium text-white transition-all duration-200 hover:bg-emerald-600 min-h-[3rem] active:scale-[0.98]"
             >
-              Start Trading
+              {ctaLabel}
             </button>
           </li>
         </ul>

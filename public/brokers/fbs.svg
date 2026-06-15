@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 40" role="img" aria-label="FBS">
+  <rect width="80" height="40" rx="8" fill="#052E16"/>
+  <rect x="8" y="8" width="24" height="24" rx="6" fill="#22C55E"/>
+  <text x="20" y="25" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="10" font-weight="800">FBS</text>
+  <text x="54" y="25" text-anchor="middle" fill="#4ADE80" font-family="Arial,sans-serif" font-size="18" font-weight="800">FBS</text>
+</svg>

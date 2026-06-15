@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 40" role="img" aria-label="IC Markets">
+  <rect width="140" height="40" rx="8" fill="#111"/>
+  <rect x="8" y="8" width="24" height="24" rx="4" fill="#F8C300"/>
+  <text x="20" y="25" text-anchor="middle" fill="#111" font-family="Arial,sans-serif" font-size="11" font-weight="800">IC</text>
+  <text x="82" y="25" text-anchor="middle" fill="#F8C300" font-family="Arial,sans-serif" font-size="15" font-weight="700">IC Markets</text>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 40" role="img" aria-label="XM">
+  <rect width="90" height="40" rx="8" fill="#1A0505"/>
+  <rect x="8" y="8" width="24" height="24" rx="4" fill="#E53935"/>
+  <text x="20" y="26" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="14" font-weight="800">XM</text>
+  <text x="62" y="25" text-anchor="middle" fill="#EF5350" font-family="Arial,sans-serif" font-size="18" font-weight="800">XM</text>
+</svg>

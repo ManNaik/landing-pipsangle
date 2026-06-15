@@ -90,12 +90,20 @@ function formatCountdown(ms: number): string {
   return `${h}h ${m}m ${s}s`;
 }
 
-function useMarketHours() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+type SessionRow = (typeof SESSIONS)[number] & {
+  open: boolean;
+  countdown: string;
+  status: "closes" | "opens";
+};
+
+const PLACEHOLDER_SESSIONS: SessionRow[] = SESSIONS.map((session) => ({
+  ...session,
+  open: false,
+  countdown: "—",
+  status: "opens",
+}));
+
+function computeSessions(now: Date): SessionRow[] {
   return SESSIONS.map((session) => {
     const open = isSessionOpen(session, now);
     const nextClose = getNextClose(session, now);
@@ -109,6 +117,19 @@ function useMarketHours() {
       status: open ? "closes" : "opens",
     };
   });
+}
+
+function useMarketHours() {
+  const [sessions, setSessions] = useState<SessionRow[]>(PLACEHOLDER_SESSIONS);
+
+  useEffect(() => {
+    const update = () => setSessions(computeSessions(new Date()));
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  return sessions;
 }
 
 export function MarketHours() {

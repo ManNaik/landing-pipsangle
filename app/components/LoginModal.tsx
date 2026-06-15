@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { apiPost } from "../lib/api";
+import type { LoginResponse } from "../lib/types";
 
 type LoginModalProps = {
   open: boolean;
@@ -11,6 +14,8 @@ type LoginModalProps = {
 export function LoginModal({ open, onClose }: LoginModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -34,6 +39,32 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
   }, [open, onClose]);
 
   if (!open || !mounted) return null;
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      const result = await apiPost<LoginResponse>("/auth/login/", {
+        email,
+        password,
+      });
+      localStorage.setItem("access_token", result.access_token);
+      localStorage.setItem("refresh_token", result.refresh_token);
+      onClose();
+      form.reset();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return createPortal(
     <div
@@ -87,12 +118,12 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           </p>
         </div>
 
-        <form
-          className="mt-6 space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-          }}
-        >
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          {error && (
+            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+              {error}
+            </p>
+          )}
           <div>
             <label
               htmlFor="login-email"
@@ -131,21 +162,22 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-600"
+            disabled={loading}
+            className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-600 disabled:opacity-60"
           >
-            Log in
+            {loading ? "Logging in…" : "Log in"}
           </button>
         </form>
 
         <p className="mt-5 text-center text-sm text-zinc-500">
           Don&apos;t have an account?{" "}
-          <button
-            type="button"
+          <Link
+            href="/signup"
             className="font-medium text-emerald-400 transition hover:text-emerald-300"
             onClick={onClose}
           >
             Sign up
-          </button>
+          </Link>
         </p>
       </div>
     </div>,
