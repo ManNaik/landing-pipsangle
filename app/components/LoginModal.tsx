@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { apiPost } from "../lib/api";
-import type { LoginResponse } from "../lib/types";
+import { userLogin } from "../lib/auth";
+import { DEMO_CREDENTIALS } from "../lib/demoCredentials";
 
 type LoginModalProps = {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 };
 
-export function LoginModal({ open, onClose }: LoginModalProps) {
+export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
+  const router = useRouter();
   const dialogRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,14 +54,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     const password = formData.get("password") as string;
 
     try {
-      const result = await apiPost<LoginResponse>("/auth/login/", {
-        email,
-        password,
-      });
-      localStorage.setItem("access_token", result.access_token);
-      localStorage.setItem("refresh_token", result.refresh_token);
+      await userLogin(email, password);
       onClose();
       form.reset();
+      onSuccess?.();
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -178,6 +178,10 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
           >
             Sign up
           </Link>
+        </p>
+
+        <p className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 text-center text-xs text-zinc-500">
+          Demo: {DEMO_CREDENTIALS.user.email} / {DEMO_CREDENTIALS.user.password}
         </p>
       </div>
     </div>,

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { FreeTrialBadge } from "../../components/FreeTrialBadge";
 import { SignupForm } from "../../components/SignupForm";
 import { buildPageMetadataFromConfig } from "../../lib/seo";
+import { FREE_TRIAL_HEADLINE, FREE_TRIAL_SHORT } from "../../lib/trial";
 
 export async function generateMetadata() {
   return buildPageMetadataFromConfig({
@@ -17,11 +19,12 @@ export default async function SignupPage() {
     <div className="min-w-0">
       <section className="border-b border-zinc-800 px-4 py-14 sm:px-6 sm:py-20 lg:py-28 lg:px-8">
         <div className="mx-auto max-w-md">
+          <FreeTrialBadge variant="highlight" className="mx-auto mb-5" />
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl text-center">
-            Create Account
+            {FREE_TRIAL_HEADLINE}
           </h1>
           <p className="mt-4 text-base text-zinc-400 text-center">
-            Start with forex signals or upgrade to full automation.
+            Create your account and {FREE_TRIAL_SHORT.toLowerCase()} — full access to forex signals and automation.
           </p>
           <Suspense fallback={<div className="mt-8 text-center text-zinc-500">Loading...</div>}>
             <SignupForm />

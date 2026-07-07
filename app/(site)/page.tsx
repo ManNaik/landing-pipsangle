@@ -2,13 +2,27 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BrokerTicker } from "../components/BrokerTicker";
 import { CommunityChats } from "../components/CommunityChats";
+import { FreeTrialBadge } from "../components/FreeTrialBadge";
 import { HeroBackground } from "../components/HeroBackground";
 import { LeadChatbot } from "../components/LeadChatbot";
 import { MarketHours } from "../components/MarketHours";
 import { formatSignalStatus } from "../lib/format";
 import { getBlockMeta, getHomeData } from "../lib/home";
 import { buildPageMetadataFromConfig, getSiteConfig } from "../lib/seo";
+import { FREE_TRIAL_CTA, getTrialSignupUrl } from "../lib/trial";
 import type { AiIntelligenceModule } from "../lib/types";
+
+const DEFAULT_HERO_BODY =
+  "Daily forex signals with clear entry, stop loss, and take profit levels. Connect MetaTrader for optional hands-free execution with built-in risk controls.";
+
+function splitHeroBody(body: string): { lead: string; support: string | null } {
+  const trimmed = body.trim();
+  const match = trimmed.match(/^([^.!?]+[.!?])\s+([\s\S]+)$/);
+  if (match?.[2]) {
+    return { lead: match[1], support: match[2] };
+  }
+  return { lead: trimmed, support: null };
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig();
@@ -42,6 +56,9 @@ export default async function Home() {
 
   const hero = blocks["home.hero"];
   const heroMeta = getBlockMeta(hero);
+  const { lead: heroLead, support: heroSupport } = splitHeroBody(
+    hero?.body ?? DEFAULT_HERO_BODY
+  );
   const forexBlock = blocks["home.forex_signals"];
   const forexMeta = getBlockMeta(forexBlock);
   const automationBlock = blocks["home.automation"];
@@ -88,7 +105,7 @@ export default async function Home() {
   return (
     <div className="min-w-0">
       {/* Hero */}
-      <section className="relative flex min-h-[75vh] items-center overflow-hidden border-b border-zinc-800 px-4 py-20 sm:min-h-[80vh] sm:px-6 sm:py-28 lg:min-h-[88vh] lg:px-8 lg:py-32">
+      <section className="relative flex min-h-[75vh] items-center overflow-hidden border-b border-zinc-800 px-4 py-24 sm:min-h-[80vh] sm:px-6 sm:py-32 lg:min-h-[88vh] lg:px-8 lg:py-36">
         <HeroBackground />
         <div
           className="absolute inset-0 bg-zinc-950/70"
@@ -98,42 +115,54 @@ export default async function Home() {
           className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(16,185,129,0.2),transparent)]"
           aria-hidden
         />
-        <div className="relative z-10 mx-auto max-w-4xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.8)] sm:text-4xl md:text-5xl lg:text-6xl">
+        <div className="relative z-10 mx-auto max-w-3xl text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.25em] text-emerald-400/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">
+            {(heroMeta.eyebrow as string) ?? "Professional Forex Trading"}
+          </p>
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.8)] sm:mt-5 sm:text-4xl md:text-5xl lg:text-[3.25rem] lg:leading-[1.12] lg:tracking-[-0.02em]">
             {hero?.title ?? "Forex Signals & Automated Trading"}
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-200 drop-shadow-[0_2px_12px_rgba(0,0,0,0.7)] sm:mt-6 sm:text-lg">
-            {hero?.subtitle ??
-              "Trade smarter with professional signals or automate your trading account."}
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-4">
-            <Link
-              href={(heroMeta.cta_primary_url as string) ?? "#forex-signals"}
-              className="rounded-lg bg-emerald-500 px-6 py-3.5 text-base font-medium text-white shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-600 min-h-[3rem] flex items-center justify-center sm:min-h-0"
-            >
-              {(heroMeta.cta_primary_label as string) ?? "View Signals"}
-            </Link>
-            <Link
-              href={(heroMeta.cta_secondary_url as string) ?? "#automation"}
-              className="rounded-lg border border-zinc-500/80 bg-zinc-950/60 px-6 py-3.5 text-base font-medium text-white shadow-lg shadow-black/40 backdrop-blur-sm transition hover:border-zinc-400 hover:bg-zinc-900/80 min-h-[3rem] flex items-center justify-center sm:min-h-0"
-            >
-              {(heroMeta.cta_secondary_label as string) ?? "Automate Trading"}
-            </Link>
+          <div className="mx-auto mt-6 max-w-2xl space-y-3 sm:mt-8 sm:space-y-4">
+            <p className="text-base leading-relaxed text-zinc-200 drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)] sm:text-lg sm:leading-8">
+              {heroLead}
+            </p>
+            {heroSupport ? (
+              <p className="text-sm leading-relaxed text-zinc-400/95 sm:text-base sm:leading-7">
+                {heroSupport}
+              </p>
+            ) : null}
+          </div>
+          <div className="mx-auto mt-10 flex max-w-lg flex-col items-center sm:mt-12">
+            <FreeTrialBadge variant="highlight" className="mb-6" />
+            <div
+              className="mb-8 h-px w-20 bg-gradient-to-r from-transparent via-emerald-500/35 to-transparent sm:mb-10"
+              aria-hidden
+            />
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-4">
+              <Link
+                href={getTrialSignupUrl()}
+                className="flex min-h-[3rem] items-center justify-center rounded-lg bg-emerald-500 px-7 py-3.5 text-base font-medium tracking-wide text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 sm:min-h-0 sm:min-w-[11rem]"
+              >
+                {FREE_TRIAL_CTA}
+              </Link>
+              <Link
+                href={(heroMeta.cta_primary_url as string) ?? "#forex-signals"}
+                className="flex min-h-[3rem] items-center justify-center rounded-lg border border-zinc-600/70 bg-zinc-950/50 px-7 py-3.5 text-base font-medium tracking-wide text-zinc-100 shadow-lg shadow-black/30 backdrop-blur-sm transition hover:border-zinc-500 hover:bg-zinc-900/70 sm:min-h-0 sm:min-w-[11rem]"
+              >
+                {(heroMeta.cta_primary_label as string) ?? "View Signals"}
+              </Link>
+              <Link
+                href={(heroMeta.cta_secondary_url as string) ?? "#automation"}
+                className="flex min-h-[3rem] items-center justify-center rounded-lg border border-zinc-600/70 bg-zinc-950/50 px-7 py-3.5 text-base font-medium tracking-wide text-zinc-100 shadow-lg shadow-black/30 backdrop-blur-sm transition hover:border-zinc-500 hover:bg-zinc-900/70 sm:min-h-0 sm:min-w-[11rem]"
+              >
+                {(heroMeta.cta_secondary_label as string) ?? "Automate Trading"}
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* SEO intro */}
-      <section className="border-b border-zinc-800 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm leading-relaxed text-zinc-400 sm:text-base">
-            {hero?.body ||
-              "PipAngel is a professional forex signals and automated trading platform built for traders who want clear trade setups, transparent performance, and optional hands-free execution. Receive daily forex signals with entry, stop loss, and take profit levels, or connect your MetaTrader account and let our automation engine execute trades with built-in risk controls. Whether you trade manually or automate, PipAngel gives you institutional-grade ideas backed by published results you can verify on our performance page."}
-          </p>
-        </div>
-      </section>
-
-      <BrokerTicker variant="platforms" label="Trading platforms we support" />
+      <BrokerTicker variant="featured" label="Brokers we support" />
 
       {/* Integrated Forex Signals Overview */}
       <section
@@ -248,8 +277,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <BrokerTicker variant="tier1" />
-
       {/* Recent Trade Performance + Market Hours (two columns) */}
       <section className="border-b border-zinc-800 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-6xl min-w-0">
@@ -352,8 +379,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <BrokerTicker variant="global" label="Trusted by traders worldwide" />
-
       {/* Integrated Automation Overview */}
       <section
         id="automation"
@@ -439,8 +464,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
-      <BrokerTicker variant="more" />
 
       {/* AI Market Intelligence Engine */}
       <section className="relative border-b border-zinc-800 px-4 py-12 sm:px-6 sm:py-20 lg:px-8 overflow-hidden">
@@ -536,8 +559,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <BrokerTicker variant="tier1" label="Connect your broker in minutes" />
-
       {/* Stats */}
       <section className="border-b border-zinc-800 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
         <div className="mx-auto max-w-6xl">
@@ -556,8 +577,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
-      <BrokerTicker variant="platforms" />
 
       {/* Sections */}
       <section className="border-b border-zinc-800 px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
@@ -582,11 +601,10 @@ export default async function Home() {
         </div>
       </section>
 
-      <BrokerTicker variant="global" />
-
        {/* CTA */}
       <section className="px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
         <div className="mx-auto max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-12 text-center sm:px-6 sm:py-16 lg:px-12">
+          <FreeTrialBadge variant="highlight" className="mb-5" />
           <h2 className="text-xl font-semibold text-white sm:text-2xl lg:text-3xl">
             {ctaBlock?.title ?? "Start Trading Smarter Today"}
           </h2>
@@ -594,6 +612,12 @@ export default async function Home() {
             {ctaBlock?.subtitle ?? "Join traders using our signals and automation platform."}
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-4">
+            <Link
+              href={getTrialSignupUrl()}
+              className="rounded-lg bg-emerald-500 px-6 py-3.5 text-base font-medium text-white transition hover:bg-emerald-600 min-h-[3rem] flex items-center justify-center sm:min-h-0"
+            >
+              {FREE_TRIAL_CTA}
+            </Link>
             {(ctaButtons.length > 0
               ? ctaButtons
               : [
@@ -606,7 +630,7 @@ export default async function Home() {
                 href={btn.url}
                 className={
                   i === 0
-                    ? "rounded-lg bg-emerald-500 px-6 py-3.5 text-base font-medium text-white transition hover:bg-emerald-600 min-h-[3rem] flex items-center justify-center sm:min-h-0"
+                    ? "rounded-lg border border-zinc-600 px-6 py-3.5 text-base font-medium text-white transition hover:bg-zinc-800 min-h-[3rem] flex items-center justify-center sm:min-h-0"
                     : "rounded-lg border border-zinc-600 px-6 py-3.5 text-base font-medium text-white transition hover:bg-zinc-800 min-h-[3rem] flex items-center justify-center sm:min-h-0"
                 }
               >

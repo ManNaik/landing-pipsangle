@@ -1,11 +1,21 @@
 export function getApiBase(): string {
-  return process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
+  const configured = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "");
+  if (configured) return configured;
+
+  if (typeof window !== "undefined") return "";
+
+  const site =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  return site.replace(/\/$/, "");
 }
 
 function buildUrl(path: string): string {
-  const base = getApiBase().replace(/\/$/, "");
+  const base = getApiBase();
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `${base}/api/v1${normalized}`;
+  const withoutTrailing = normalized.replace(/\/$/, "") || normalized;
+  if (!base) return `/api/v1${withoutTrailing}`;
+  return `${base}/api/v1${withoutTrailing}`;
 }
 
 export async function apiGet<T>(path: string, revalidate = 60): Promise<T> {

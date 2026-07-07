@@ -5,18 +5,16 @@ type BrokerTickerProps = {
   label?: string;
 };
 
-const LOOP_COPIES = 8;
-
 function BrokerLogo({ broker }: { broker: Broker }) {
   return (
-    <div className="flex shrink-0 items-center justify-center px-6 sm:px-8">
+    <div className="flex shrink-0 items-center justify-center px-8 sm:px-10">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={broker.logo}
         alt={broker.name}
         width={140}
         height={40}
-        className="h-8 w-auto max-w-[140px] object-contain opacity-75 transition-opacity duration-300 hover:opacity-100 sm:h-9"
+        className="h-7 w-auto max-w-[140px] object-contain opacity-80 transition-opacity duration-300 hover:opacity-100 sm:h-8"
         draggable={false}
         loading="lazy"
       />
@@ -29,8 +27,7 @@ export function BrokerTicker({
   label = "Compatible brokers & platforms",
 }: BrokerTickerProps) {
   const brokers = BROKER_SETS[variant];
-  const segment = Array.from({ length: LOOP_COPIES }, () => brokers).flat();
-  const track = [...segment, ...segment];
+  const track = [...brokers, ...brokers];
 
   return (
     <div
@@ -49,7 +46,10 @@ export function BrokerTicker({
           className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-zinc-950 to-transparent sm:w-24"
           aria-hidden
         />
-        <div className="broker-ticker-track flex w-max">
+        <div
+          className="broker-ticker-track flex w-max"
+          style={{ animationDuration: `${Math.max(brokers.length * 6, 36)}s` }}
+        >
           {track.map((broker, i) => (
             <BrokerLogo key={`${broker.id}-${i}`} broker={broker} />
           ))}

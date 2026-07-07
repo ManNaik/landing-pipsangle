@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FreeTrialBadge } from "../../components/FreeTrialBadge";
 import { safeApiGet } from "../../lib/api";
 import {
   buildBreadcrumbSchema,
@@ -8,6 +9,7 @@ import {
   jsonLdScript,
   resolveSiteUrl,
 } from "../../lib/seo";
+import { FREE_TRIAL_CTA, getTrialSignupUrl } from "../../lib/trial";
 import type { ContentBlock, ListResponse, Signal } from "../../lib/types";
 
 export async function generateMetadata() {
@@ -69,12 +71,13 @@ export default async function ForexSignalsPage() {
           <p className="mt-4 text-base text-zinc-400 sm:mt-6 sm:text-lg">
             {subtitle}
           </p>
-          <div className="mt-8 sm:mt-10">
+          <FreeTrialBadge variant="highlight" className="mt-6" />
+          <div className="mt-6 sm:mt-8">
             <Link
-              href="/signup"
+              href={getTrialSignupUrl()}
               className="inline-flex min-h-[3rem] w-full items-center justify-center rounded-lg bg-emerald-500 px-6 py-3.5 text-base font-medium text-white transition hover:bg-emerald-600 sm:w-auto"
             >
-              Get Signals
+              {FREE_TRIAL_CTA}
             </Link>
           </div>
         </div>
