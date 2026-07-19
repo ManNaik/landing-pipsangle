@@ -1,40 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { getDashboardStats } from "../../lib/dashboardData";
-import { mockExecutedTrades, mockSignals } from "../../lib/mockData";
-import {
-  ALL_TIME_PROFIT,
-  getPeriodProfit,
-  getProfitData,
-  getProfitRange,
-  type ProfitPeriod,
-} from "../../lib/profitData";
+import { useEffect, useState } from "react";
+import { getAccountMetrics, getDashboardStats } from "../../lib/dashboardData";
+import { mockExecutedTrades, mockSignals, isMockApiEnabled } from "../../lib/mockData";
+import { type ProfitPeriod } from "../../lib/profitData";
 import { shouldShowWarningBanner } from "../../lib/brokerConnection";
 import { useAuth } from "../../lib/useAuth";
-import { getSubscriptionInfo } from "../../lib/subscriptionData";
+import { useSubscriptionInfo } from "../../lib/useSubscriptionInfo";
+import { useOpenTrades, useTradeStats } from "../../lib/useTrades";
+import { useProfitData } from "../../lib/useProfitData";
+import { fetchTrades } from "../../lib/tradesApi";
+import type { ExecutedTrade } from "../../lib/types";
 import { ActiveSubscriptionCard } from "./ActiveSubscriptionCard";
 import { BrokerWarningBanner } from "./BrokerWarningBanner";
 import { useBrokerConnectionContext } from "./BrokerConnectionContext";
+import { DashboardStickyHeader } from "./DashboardStickyHeader";
 import { ExecutedTradesList } from "./ExecutedTradesList";
+import { HeroMetrics } from "./HeroMetrics";
 import { ProfitChart } from "./ProfitChart";
 import { SignalsList } from "./SignalsList";
 
 const PERIOD_OPTIONS: { value: ProfitPeriod; label: string }[] = [
-  { value: "1d", label: "1 day" },
-  { value: "7d", label: "7 days" },
-  { value: "1m", label: "1 month" },
+  { value: "1d", label: "1D" },
+  { value: "7d", label: "7D" },
+  { value: "1m", label: "1M" },
   { value: "custom", label: "Custom" },
 ];
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
+type FeedTab = "live" | "signals";
 
 function defaultCustomDates() {
   const to = new Date();
@@ -76,6 +69,49 @@ function ConnectedSuccessBanner({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
+function FeedTabs({
+  active,
+  onChange,
+}: {
+  active: FeedTab;
+  onChange: (tab: FeedTab) => void;
+}) {
+  return (
+    <div
+      className="flex rounded-xl bg-zinc-900/80 p-1 ring-1 ring-zinc-800 lg:hidden"
+      role="tablist"
+      aria-label="Trade feeds"
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={active === "live"}
+        onClick={() => onChange("live")}
+        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+          active === "live"
+            ? "bg-zinc-800 text-white shadow-sm"
+            : "text-zinc-400 hover:text-zinc-200"
+        }`}
+      >
+        My Account Trades
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={active === "signals"}
+        onClick={() => onChange("signals")}
+        className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition ${
+          active === "signals"
+            ? "bg-zinc-800 text-white shadow-sm"
+            : "text-zinc-400 hover:text-zinc-200"
+        }`}
+      >
+        Detected Signals
+      </button>
+    </div>
+  );
+}
+
 export function DashboardContent() {
   const { user } = useAuth();
   const {
@@ -86,49 +122,77 @@ export function DashboardContent() {
   } = useBrokerConnectionContext();
   const [period, setPeriod] = useState<ProfitPeriod>("7d");
   const [customDates, setCustomDates] = useState(defaultCustomDates);
+  const [feedTab, setFeedTab] = useState<FeedTab>("live");
+  const [dashboardTrades, setDashboardTrades] = useState<ExecutedTrade[]>([]);
+
+  const { trades: openTrades } = useOpenTrades();
+  const { stats: tradeStats } = useTradeStats();
+  const { data: profitData, periodProfit } = useProfitData(
+    period,
+    period === "custom" ? customDates : undefined
+  );
+  const { subscription, refresh: refreshSubscription } = useSubscriptionInfo(user);
+
+  useEffect(() => {
+    if (isMockApiEnabled()) {
+      setDashboardTrades(mockExecutedTrades);
+      return;
+    }
+
+    let cancelled = false;
+    async function load() {
+      try {
+        const data = await fetchTrades(1, 20);
+        if (!cancelled) setDashboardTrades(data.results);
+      } catch {
+        if (!cancelled) setDashboardTrades([]);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const stats = user ? getDashboardStats(user) : null;
-  const subscription = user ? getSubscriptionInfo(user) : null;
+  const metrics = user
+    ? getAccountMetrics(user, {
+        tradeStats,
+        openTrades,
+        allTimeProfit: tradeStats?.totalPnl,
+      })
+    : null;
 
-  const profitData = useMemo(() => {
-    const range = getProfitRange(
-      period,
-      period === "custom" ? customDates : undefined
-    );
-    return getProfitData(range);
-  }, [period, customDates]);
-
-  const periodProfit = useMemo(() => getPeriodProfit(profitData), [profitData]);
-
-  if (!user || !stats || !subscription) return null;
+  if (!user || !stats || !metrics || !subscription) return null;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:gap-4">
-      {showConnectedMessage && (
-        <ConnectedSuccessBanner onDismiss={dismissConnectedMessage} />
-      )}
+    <div className="mx-auto flex max-w-6xl flex-col">
+      <DashboardStickyHeader brokerStatus={brokerStatus} />
 
-      {shouldShowWarningBanner(brokerStatus) && (
-        <BrokerWarningBanner onConnect={openOnboarding} />
-      )}
+      <div className="flex flex-col gap-4 pt-4 sm:gap-5">
+        {showConnectedMessage && (
+          <ConnectedSuccessBanner onDismiss={dismissConnectedMessage} />
+        )}
 
-      <div className="shrink-0">
-        <p className="text-sm text-zinc-500">Welcome back</p>
-        <h1 className="mt-0.5 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-          {stats.displayName}
-        </h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          Signed in as <span className="text-zinc-300">{user.email}</span>
-        </p>
-      </div>
+        {shouldShowWarningBanner(brokerStatus) && (
+          <BrokerWarningBanner onConnect={openOnboarding} />
+        )}
 
-      <div className="grid shrink-0 gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-4">
-        <section className="min-w-0 space-y-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <HeroMetrics metrics={metrics} />
+
+        <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-base font-medium text-white">Profit performance</h2>
+              <h2 className="text-base font-semibold text-white">Profit performance</h2>
               <p className="mt-0.5 text-sm text-zinc-500">
-                Earnings over the selected period
+                Account equity over the selected period
+                <span className="ml-2 tabular-nums text-emerald-400">
+                  {periodProfit >= 0 ? "+" : ""}
+                  {new Intl.NumberFormat(undefined, {
+                    style: "currency",
+                    currency: "USD",
+                  }).format(periodProfit)}
+                </span>
               </p>
             </div>
 
@@ -151,7 +215,7 @@ export function DashboardContent() {
           </div>
 
           {period === "custom" && (
-            <div className="flex flex-wrap items-end gap-3">
+            <div className="mt-3 flex flex-wrap items-end gap-3">
               <label className="flex flex-col gap-1 text-xs text-zinc-500">
                 From
                 <input
@@ -185,58 +249,42 @@ export function DashboardContent() {
             </div>
           )}
 
-          <div className="rounded-2xl bg-zinc-900/40 p-3 sm:p-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-              Period profit
-            </p>
-            <p className="mt-0.5 text-xl font-semibold tabular-nums text-emerald-400 sm:text-2xl">
-              {formatCurrency(periodProfit)}
-            </p>
-            <div className="mt-2">
-              <ProfitChart data={profitData} className="h-36 sm:h-40" />
+          <div className="mt-4">
+            <ProfitChart data={profitData} className="h-48 sm:h-56" />
+          </div>
+        </section>
+
+        <section aria-label="Trade activity feeds">
+          <FeedTabs active={feedTab} onChange={setFeedTab} />
+
+          <div className="mt-3 hidden gap-4 lg:grid lg:grid-cols-2">
+            <div className="min-w-0 rounded-2xl border border-blue-500/10 bg-blue-500/[0.04] p-4">
+              <SignalsList signals={mockSignals} variant="embedded" />
+            </div>
+            <div className="min-w-0 rounded-2xl border border-zinc-800/80 bg-zinc-900/30 p-4">
+              <ExecutedTradesList trades={dashboardTrades} variant="embedded" />
             </div>
           </div>
-        </section>
 
-        <section className="flex flex-col justify-center gap-3">
-          <div className="rounded-2xl bg-zinc-900/40 p-4 sm:p-5">
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-              Overall profit
-            </p>
-            <p className="mt-2 text-3xl font-bold tracking-tight tabular-nums text-white sm:text-4xl">
-              {formatCurrency(ALL_TIME_PROFIT)}
-            </p>
-            <p className="mt-2 text-sm text-zinc-400">
-              Cumulative all-time earnings from automated trades and signals.
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-zinc-900/30 p-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-              This period
-            </p>
-            <p className="mt-1.5 text-lg font-semibold tabular-nums text-emerald-400">
-              {formatCurrency(periodProfit)}
-            </p>
-            <p className="mt-1 text-sm text-zinc-500">
-              {period === "1d"
-                ? "Last 24 hours"
-                : period === "7d"
-                  ? "Last 7 days"
-                  : period === "1m"
-                    ? "Last 30 days"
-                    : "Selected date range"}
-            </p>
+          <div className="mt-3 lg:hidden">
+            {feedTab === "live" ? (
+              <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/30 p-4">
+                <ExecutedTradesList trades={dashboardTrades} variant="embedded" />
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-blue-500/10 bg-blue-500/[0.04] p-4">
+                <SignalsList signals={mockSignals} variant="embedded" />
+              </div>
+            )}
           </div>
         </section>
-      </div>
 
-      <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 sm:items-stretch sm:gap-4">
-        <SignalsList signals={mockSignals} />
-        <ExecutedTradesList trades={mockExecutedTrades} />
+        <ActiveSubscriptionCard
+          user={user}
+          subscription={subscription}
+          onSubscriptionChange={refreshSubscription}
+        />
       </div>
-
-      <ActiveSubscriptionCard subscription={subscription} />
     </div>
   );
 }

@@ -192,6 +192,7 @@ export interface AuthUser {
   id: string;
   email: string;
   plan: string | null;
+  plan_slug?: string | null;
   is_staff: boolean;
   trial_active?: boolean;
   trial_ends_at?: string | null;

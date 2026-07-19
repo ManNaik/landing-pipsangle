@@ -1,11 +1,17 @@
 import type { AuthUser } from "./types";
 import {
+  getBillingPeriodDays,
   getSubscriptionRenewalIso,
   daysUntil as subscriptionDaysUntil,
 } from "./subscriptionData";
 
 export const SUBSCRIPTION_EXTENSION_STORAGE_KEY =
   "pipangel-store-subscription-end";
+
+export type SubscriptionStateOverride = {
+  renewalEndIso?: string;
+  trial_active?: boolean;
+};
 
 export type StoreRewardCategory = "coupon" | "extension";
 
@@ -99,32 +105,63 @@ function defaultRenewalIso(user: AuthUser): string {
   return getSubscriptionRenewalIso(user, plan);
 }
 
-export function loadSubscriptionEndOverride(): string | null {
-  if (typeof window === "undefined") return null;
+export function loadSubscriptionState(): SubscriptionStateOverride {
+  if (typeof window === "undefined") return {};
 
   try {
     const raw = localStorage.getItem(SUBSCRIPTION_EXTENSION_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { renewalEndIso?: string };
-    return parsed.renewalEndIso ?? null;
+    if (!raw) return {};
+    return JSON.parse(raw) as SubscriptionStateOverride;
   } catch {
-    return null;
+    return {};
   }
 }
 
-export function saveSubscriptionEndOverride(renewalEndIso: string): void {
+export function loadSubscriptionEndOverride(): string | null {
+  return loadSubscriptionState().renewalEndIso ?? null;
+}
+
+export function saveSubscriptionState(patch: SubscriptionStateOverride): void {
   if (typeof window === "undefined") return;
+  const current = loadSubscriptionState();
   localStorage.setItem(
     SUBSCRIPTION_EXTENSION_STORAGE_KEY,
-    JSON.stringify({ renewalEndIso })
+    JSON.stringify({ ...current, ...patch })
   );
 }
 
+export function saveSubscriptionEndOverride(renewalEndIso: string): void {
+  saveSubscriptionState({ renewalEndIso });
+}
+
+export function loadTrialActiveOverride(user: AuthUser): boolean {
+  const override = loadSubscriptionState().trial_active;
+  if (typeof override === "boolean") return override;
+  return Boolean(user.trial_active);
+}
+
 export function getEffectiveSubscriptionEnd(user: AuthUser): string {
-  const base = defaultRenewalIso(user);
   const override = loadSubscriptionEndOverride();
-  if (!override) return base;
-  return new Date(override) > new Date(base) ? override : base;
+  if (override) return override;
+  return defaultRenewalIso(user);
+}
+
+export function renewSubscriptionPeriod(user: AuthUser): string {
+  const plan =
+    user.plan === "Premium"
+      ? "Premium"
+      : user.plan === "Basic"
+        ? "Basic"
+        : null;
+  if (!plan) {
+    throw new Error("No active plan to renew.");
+  }
+
+  const periodDays = getBillingPeriodDays(plan);
+  const currentEnd = getEffectiveSubscriptionEnd(user);
+  const newEnd = extendSubscriptionEnd(currentEnd, periodDays);
+  saveSubscriptionState({ renewalEndIso: newEnd, trial_active: false });
+  return newEnd;
 }
 
 export function extendSubscriptionEnd(

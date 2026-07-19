@@ -3,6 +3,16 @@ import { FREE_TRIAL_DAYS } from "./trial";
 
 export type SubscriptionStatus = "trial" | "active" | "expired" | "none";
 
+export type SubscriptionScreen =
+  | "none"
+  | "trial"
+  | "active"
+  | "renew"
+  | "extend"
+  | "expired";
+
+export const EXPIRING_SOON_DAYS = 3;
+
 export const PREMIUM_BILLING_DAYS = 28;
 export const BASIC_BILLING_DAYS = 7;
 
@@ -14,6 +24,7 @@ export type SubscriptionInfo = {
   remainingDays: number;
   /** Formatted end date for the current countdown phase. */
   phaseEndDate: string;
+  phaseEndIso: string;
   trialDaysRemaining: number;
   trialEndsDate: string;
   subscriptionRenewsDate: string;
@@ -21,6 +32,11 @@ export type SubscriptionInfo = {
   subscriptionPeriodDays: number;
   subscriptionStartsDate: string;
   billingCycle: string;
+};
+
+export type SubscriptionInfoOptions = {
+  effectiveRenewalIso?: string | null;
+  trialActiveOverride?: boolean;
 };
 
 function formatDate(iso: string): string {
@@ -36,8 +52,16 @@ export function daysUntil(iso: string): number {
   return Math.max(0, Math.ceil(diff / (24 * 60 * 60 * 1000)));
 }
 
-export function isOnTrial(user: AuthUser): boolean {
-  return Boolean(user.trial_active && user.plan);
+export function isPastIso(iso: string): boolean {
+  return new Date(iso).getTime() < Date.now();
+}
+
+export function isOnTrial(user: AuthUser, trialActiveOverride?: boolean): boolean {
+  const active =
+    typeof trialActiveOverride === "boolean"
+      ? trialActiveOverride
+      : Boolean(user.trial_active);
+  return active && Boolean(user.plan);
 }
 
 export function getBillingPeriodDays(plan: "Basic" | "Premium"): number {
@@ -80,7 +104,24 @@ export function getSubscriptionRenewalIso(
   return renewal.toISOString();
 }
 
-export function getSubscriptionInfo(user: AuthUser): SubscriptionInfo {
+export function resolveSubscriptionScreen(
+  subscription: SubscriptionInfo,
+  forcedScreen?: SubscriptionScreen | null
+): SubscriptionScreen {
+  if (forcedScreen) return forcedScreen;
+  if (subscription.status === "none") return "none";
+  if (subscription.status === "expired") return "expired";
+  if (subscription.isTrial) {
+    return subscription.remainingDays <= EXPIRING_SOON_DAYS ? "renew" : "trial";
+  }
+  if (subscription.remainingDays <= EXPIRING_SOON_DAYS) return "renew";
+  return "active";
+}
+
+export function getSubscriptionInfo(
+  user: AuthUser,
+  options?: SubscriptionInfoOptions
+): SubscriptionInfo {
   const plan =
     user.plan === "Premium"
       ? "Premium"
@@ -95,6 +136,7 @@ export function getSubscriptionInfo(user: AuthUser): SubscriptionInfo {
       isTrial: false,
       remainingDays: 0,
       phaseEndDate: "—",
+      phaseEndIso: "",
       trialDaysRemaining: 0,
       trialEndsDate: "—",
       subscriptionRenewsDate: "—",
@@ -105,23 +147,30 @@ export function getSubscriptionInfo(user: AuthUser): SubscriptionInfo {
     };
   }
 
-  const isTrial = Boolean(user.trial_active);
+  const isTrial = isOnTrial(user, options?.trialActiveOverride);
   const trialEndIso = getTrialEndIso(user);
   const subscriptionStartIso = getSubscriptionStartIso(user);
-  const subscriptionRenewalIso = getSubscriptionRenewalIso(user, plan);
+  const computedRenewalIso = getSubscriptionRenewalIso(user, plan);
+  const subscriptionRenewalIso =
+    options?.effectiveRenewalIso ?? computedRenewalIso;
   const subscriptionPeriodDays = getBillingPeriodDays(plan);
 
   const trialDaysRemaining = daysUntil(trialEndIso);
   const subscriptionDaysRemaining = daysUntil(subscriptionRenewalIso);
+  const subscriptionExpired = !isTrial && isPastIso(subscriptionRenewalIso);
+  const trialExpired = isTrial && isPastIso(trialEndIso);
 
   const status: SubscriptionStatus = isTrial
-    ? "trial"
-    : subscriptionDaysRemaining > 0
-      ? "active"
-      : "expired";
+    ? trialExpired
+      ? "expired"
+      : "trial"
+    : subscriptionExpired
+      ? "expired"
+      : "active";
 
   const remainingDays = isTrial ? trialDaysRemaining : subscriptionDaysRemaining;
-  const phaseEndDate = formatDate(isTrial ? trialEndIso : subscriptionRenewalIso);
+  const phaseEndIso = isTrial ? trialEndIso : subscriptionRenewalIso;
+  const phaseEndDate = formatDate(phaseEndIso);
 
   return {
     plan,
@@ -129,6 +178,7 @@ export function getSubscriptionInfo(user: AuthUser): SubscriptionInfo {
     isTrial,
     remainingDays,
     phaseEndDate,
+    phaseEndIso,
     trialDaysRemaining,
     trialEndsDate: formatDate(trialEndIso),
     subscriptionRenewsDate: formatDate(subscriptionRenewalIso),

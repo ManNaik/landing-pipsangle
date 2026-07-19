@@ -81,7 +81,7 @@ export function DashboardTopbar({
 
         <Link
           href="/dashboard"
-          className="truncate text-lg font-bold tracking-tight text-white transition-opacity hover:opacity-90"
+          className="truncate text-lg font-bold tracking-tight text-white transition-opacity hover:opacity-90 lg:hidden"
         >
           {brandName}
         </Link>
@@ -94,13 +94,6 @@ export function DashboardTopbar({
           {status.indicator}
           {status.label}
         </div>
-
-        <Link
-          href="/contact"
-          className="rounded-lg px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
-        >
-          Support
-        </Link>
 
         <button
           type="button"

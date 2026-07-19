@@ -12,6 +12,7 @@ import type { ExecutedTrade, ExecutedTradeStatus } from "../../lib/types";
 
 type ExecutedTradesListProps = {
   trades: ExecutedTrade[];
+  variant?: "default" | "embedded";
 };
 
 type TradeFilter = "all" | "live" | "closed";
@@ -55,8 +56,9 @@ function formatPriceLine(trade: ExecutedTrade): string {
   return `Entry ${trade.entry}`;
 }
 
-export function ExecutedTradesList({ trades }: ExecutedTradesListProps) {
+export function ExecutedTradesList({ trades, variant = "default" }: ExecutedTradesListProps) {
   const [filter, setFilter] = useState<TradeFilter>("all");
+  const embedded = variant === "embedded";
 
   const filteredTrades = useMemo(() => {
     const list =
@@ -77,13 +79,13 @@ export function ExecutedTradesList({ trades }: ExecutedTradesListProps) {
   const liveCount = trades.filter((trade) => isLiveExecutedTrade(trade.status)).length;
 
   return (
-    <section className="flex h-[26rem] min-w-0 flex-col gap-3 sm:h-[30rem]">
+    <section className={`flex min-w-0 flex-col gap-3 ${embedded ? "h-[28rem]" : "h-[26rem] sm:h-[30rem]"}`}>
       <div className="shrink-0">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-base font-medium text-white">Executed trades</h2>
+            <h2 className="text-base font-medium text-white">My Account Trades</h2>
             <p className="mt-0.5 text-sm text-zinc-500">
-              Trades placed in your connected account
+              Actual positions on your broker
               {liveCount > 0 && (
                 <span className="text-emerald-400/80">
                   {" "}
@@ -127,8 +129,12 @@ export function ExecutedTradesList({ trades }: ExecutedTradesListProps) {
                 key={trade.id}
                 className={`rounded-xl px-4 py-3.5 ${
                   live
-                    ? "bg-emerald-500/[0.06] ring-1 ring-emerald-500/20"
-                    : "bg-zinc-900/40"
+                    ? "border border-emerald-500/20 bg-emerald-500/[0.08]"
+                    : trade.profit_loss >= 0
+                      ? "border border-emerald-500/10 bg-emerald-500/[0.04]"
+                      : trade.profit_loss < 0
+                        ? "border border-red-500/10 bg-red-500/[0.04]"
+                        : "border border-zinc-800/60 bg-zinc-900/50"
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">

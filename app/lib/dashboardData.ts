@@ -1,10 +1,24 @@
+import { ALL_TIME_PROFIT } from "./profitData";
+import { mockExecutedTrades, mockPerformanceStats } from "./mockData";
 import type { AuthUser } from "./types";
+import { isLiveExecutedTrade } from "./format";
+import type { TradeStats } from "./tradesApi";
+import type { ExecutedTrade } from "./types";
 import {
   getSubscriptionRenewalIso,
   getSubscriptionStartIso,
   getTrialEndIso,
   getTrialStartIso,
 } from "./subscriptionData";
+
+export type AccountMetrics = {
+  totalAccountEquity: number;
+  todayLivePnL: number;
+  overallProfit: number;
+  winRatePercent: number;
+  maxDrawdownPercent: number;
+  marginLevelPercent: number;
+};
 
 export type DashboardStats = {
   displayName: string;
@@ -36,6 +50,79 @@ function displayNameFromEmail(email: string): string {
     .split(/[._-]/)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+const BASE_ACCOUNT_BALANCE = 25_000;
+
+function closedTradeWinRate(trades: ExecutedTrade[]): number {
+  const closed = trades.filter((trade) => trade.status === "closed");
+  if (closed.length === 0) return 0;
+  const wins = closed.filter((trade) => trade.profit_loss > 0).length;
+  return Math.round((wins / closed.length) * 100);
+}
+
+export function getAccountMetrics(
+  user: AuthUser,
+  options?: {
+    tradeStats?: TradeStats | null;
+    openTrades?: ExecutedTrade[];
+    allTimeProfit?: number;
+  }
+): AccountMetrics {
+  const stats = getDashboardStats(user);
+  const openTrades = options?.openTrades ?? mockExecutedTrades.filter((trade) =>
+    isLiveExecutedTrade(trade.status)
+  );
+  const livePnL = openTrades.reduce((sum, trade) => sum + trade.profit_loss, 0);
+  const overallProfit = options?.allTimeProfit ?? options?.tradeStats?.totalPnl ?? ALL_TIME_PROFIT;
+
+  const equityBoost =
+    stats.automationStatus === "connected" ? overallProfit : overallProfit * 0.35;
+  const marginLevel =
+    stats.automationStatus === "connected"
+      ? 412.6
+      : stats.automationStatus === "paused"
+        ? 286.4
+        : 0;
+
+  const winRate =
+    options?.tradeStats && options.tradeStats.closed > 0
+      ? Math.round((options.tradeStats.wins / options.tradeStats.closed) * 100)
+      : stats.signalsWinRate || closedTradeWinRate(mockExecutedTrades);
+
+  return {
+    totalAccountEquity: Math.round((BASE_ACCOUNT_BALANCE + equityBoost + livePnL) * 100) / 100,
+    todayLivePnL: Math.round(livePnL * 100) / 100,
+    overallProfit,
+    winRatePercent: winRate,
+    maxDrawdownPercent: mockPerformanceStats.max_drawdown_percent,
+    marginLevelPercent: marginLevel,
+  };
+}
+
+export type CapitalAllocation = {
+  accountEquity: number;
+  utilizationPercent: number;
+  utilizedAmount: number;
+  availableAmount: number;
+};
+
+export function getCapitalAllocation(
+  user: AuthUser,
+  utilizationPercent: number
+): CapitalAllocation {
+  const { totalAccountEquity } = getAccountMetrics(user);
+  const utilizedAmount =
+    Math.round(totalAccountEquity * (utilizationPercent / 100) * 100) / 100;
+  const availableAmount =
+    Math.round((totalAccountEquity - utilizedAmount) * 100) / 100;
+
+  return {
+    accountEquity: totalAccountEquity,
+    utilizationPercent,
+    utilizedAmount,
+    availableAmount,
+  };
 }
 
 export function getDashboardStats(user: AuthUser): DashboardStats {

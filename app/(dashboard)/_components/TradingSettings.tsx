@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { getDashboardStats } from "../../lib/dashboardData";
+import { getCapitalAllocation, getDashboardStats } from "../../lib/dashboardData";
 import { getSignupUrl } from "../../lib/pricing";
 import {
   clampSettings,
   getDefaultSettingsForPlan,
   getPlanLimits,
-  loadTradingSettings,
-  saveTradingSettings,
   type TradingSettings,
 } from "../../lib/settingsData";
+import { useTradingSettings } from "../../lib/useTradingSettings";
 import { useAuth } from "../../lib/useAuth";
 
 const PLAN_LIMITS_PREMIUM_CAP = getPlanLimits("Premium").capital.max;
@@ -168,6 +167,80 @@ function StopConfirmDialog({
               Yes, stop trading
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function CapitalUtilizationSummary({
+  accountEquity,
+  utilizedAmount,
+  availableAmount,
+  utilizationPercent,
+}: {
+  accountEquity: number;
+  utilizedAmount: number;
+  availableAmount: number;
+  utilizationPercent: number;
+}) {
+  const utilizationWidth = Math.min(100, Math.max(0, utilizationPercent));
+
+  return (
+    <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-4">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+            Account capital
+          </p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-white">
+            {formatCurrency(accountEquity)}
+          </p>
+          <p className="mt-0.5 text-xs text-zinc-500">Total equity on connected broker</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-emerald-400/80">
+            Utilized ({utilizationPercent}%)
+          </p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-400">
+            {formatCurrency(utilizedAmount)}
+          </p>
+          <p className="mt-0.5 text-xs text-zinc-500">Allocated to active trading</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+            Available
+          </p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-300">
+            {formatCurrency(availableAmount)}
+          </p>
+          <p className="mt-0.5 text-xs text-zinc-500">Not deployed under current cap</p>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-medium uppercase tracking-[0.12em] text-zinc-500">
+            Capital deployment
+          </span>
+          <span className="tabular-nums text-zinc-400">
+            {formatCurrency(utilizedAmount)} of {formatCurrency(accountEquity)}
+          </span>
+        </div>
+        <div className="relative h-2.5 overflow-hidden rounded-full bg-zinc-800/70">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-600/70 to-emerald-400/90 transition-[width] duration-300"
+            style={{ width: `${utilizationWidth}%` }}
+          />
         </div>
       </div>
     </div>
@@ -415,40 +488,46 @@ function SettingCard({
 
 export function TradingSettings() {
   const { user } = useAuth();
-  const [settings, setSettings] = useState<TradingSettings | null>(null);
   const [saved, setSaved] = useState(false);
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
 
   const plan = user?.plan ?? null;
   const isPremium = plan === "Premium";
-  const limits = getPlanLimits(plan);
+  const { settings: apiSettings, save: saveSettings } = useTradingSettings(plan);
+  const planLimits = getPlanLimits(plan);
+  const limits = apiSettings?.planLimits
+    ? {
+        capital: apiSettings.planLimits,
+        autoTrade: planLimits.autoTrade,
+      }
+    : planLimits;
   const stats = user ? getDashboardStats(user) : null;
 
-  useEffect(() => {
-    if (!user) return;
-    setSettings(loadTradingSettings(plan));
-  }, [user, plan]);
+  const settings: TradingSettings | null = apiSettings
+    ? {
+        capitalUtilization: apiSettings.capitalUtilization,
+        autoTradeEnabled: apiSettings.autoTradeEnabled,
+      }
+    : null;
 
   const updateSettings = useCallback(
     (patch: Partial<TradingSettings>) => {
-      setSettings((current) => {
-        if (!current) return current;
-        const next = clampSettings({ ...current, ...patch }, plan);
-        saveTradingSettings(next);
+      if (!settings) return;
+      const next = clampSettings({ ...settings, ...patch }, plan);
+      void saveSettings(next).then(() => {
         setSaved(true);
         window.setTimeout(() => setSaved(false), 2000);
-        return next;
       });
     },
-    [plan]
+    [plan, saveSettings, settings]
   );
 
   const resetToDefaults = () => {
     const defaults = getDefaultSettingsForPlan(plan);
-    setSettings(defaults);
-    saveTradingSettings(defaults);
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2000);
+    void saveSettings(defaults).then(() => {
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2000);
+    });
   };
 
   const handleStopConfirm = () => {
@@ -460,6 +539,7 @@ export function TradingSettings() {
 
   const automationRunning = settings.autoTradeEnabled && stats?.automationStatus === "connected";
   const brokerLabel = stats?.automationBroker ?? "No broker connected";
+  const capitalAllocation = getCapitalAllocation(user, settings.capitalUtilization);
 
   const statusConfig = automationRunning
     ? {
@@ -642,36 +722,45 @@ export function TradingSettings() {
           iconBg="bg-gradient-to-br from-emerald-500/20 to-emerald-900/20"
           label="Allocation"
           title="Capital utilization"
-          description="Percentage of account balance allocated to active trades."
+          description="Set what share of your account equity the bot may deploy into trades."
           locked={!limits.capital.adjustable}
           lockLabel="Basic cap"
           upgradeMessage={`Basic uses a fixed ${limits.capital.default}% cap. Premium unlocks up to ${PLAN_LIMITS_PREMIUM_CAP}%.`}
         >
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <ValueGauge
-              value={settings.capitalUtilization}
-              min={limits.capital.min}
-              max={limits.capital.max}
-              unit="%"
+          <div className="space-y-5">
+            <CapitalUtilizationSummary
+              accountEquity={capitalAllocation.accountEquity}
+              utilizedAmount={capitalAllocation.utilizedAmount}
+              availableAmount={capitalAllocation.availableAmount}
+              utilizationPercent={capitalAllocation.utilizationPercent}
             />
-            <div className="min-w-0 flex-1 space-y-4">
-              <PremiumSlider
+
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+              <ValueGauge
                 value={settings.capitalUtilization}
                 min={limits.capital.min}
                 max={limits.capital.max}
-                step={limits.capital.step}
-                disabled={!limits.capital.adjustable}
-                onChange={(capitalUtilization) => updateSettings({ capitalUtilization })}
-              />
-              <StepperControl
-                value={settings.capitalUtilization}
-                min={limits.capital.min}
-                max={limits.capital.max}
-                step={limits.capital.step}
                 unit="%"
-                disabled={!limits.capital.adjustable}
-                onChange={(capitalUtilization) => updateSettings({ capitalUtilization })}
               />
+              <div className="min-w-0 flex-1 space-y-4">
+                <PremiumSlider
+                  value={settings.capitalUtilization}
+                  min={limits.capital.min}
+                  max={limits.capital.max}
+                  step={limits.capital.step}
+                  disabled={!limits.capital.adjustable}
+                  onChange={(capitalUtilization) => updateSettings({ capitalUtilization })}
+                />
+                <StepperControl
+                  value={settings.capitalUtilization}
+                  min={limits.capital.min}
+                  max={limits.capital.max}
+                  step={limits.capital.step}
+                  unit="%"
+                  disabled={!limits.capital.adjustable}
+                  onChange={(capitalUtilization) => updateSettings({ capitalUtilization })}
+                />
+              </div>
             </div>
           </div>
         </SettingCard>

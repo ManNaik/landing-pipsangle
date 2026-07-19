@@ -197,12 +197,91 @@ export const mockLifetimeTrades: ExecutedTrade[] = SEEDS.map(seedToTrade);
 
 export const TRADES_PAGE_SIZE = 10;
 
-export function getLifetimeTrades(): ExecutedTrade[] {
-  return mockLifetimeTrades;
+export type TradeHistoryRangePreset = "all" | "7d" | "30d" | "90d" | "1y" | "custom";
+
+export type TradeHistoryRange = {
+  from: Date;
+  to: Date;
+};
+
+export type TradeStats = {
+  total: number;
+  live: number;
+  closed: number;
+  totalPnl: number;
+  wins: number;
+  losses: number;
+};
+
+function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
-export function getLifetimeTradeStats() {
-  const trades = mockLifetimeTrades;
+function endOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+export function getTradeHistoryRange(
+  preset: TradeHistoryRangePreset,
+  custom?: { from: string; to: string }
+): TradeHistoryRange | null {
+  const now = new Date();
+
+  if (preset === "all") {
+    return null;
+  }
+
+  if (preset === "7d") {
+    const from = startOfDay(now);
+    from.setDate(from.getDate() - 6);
+    return { from, to: endOfDay(now) };
+  }
+
+  if (preset === "30d") {
+    const from = startOfDay(now);
+    from.setDate(from.getDate() - 29);
+    return { from, to: endOfDay(now) };
+  }
+
+  if (preset === "90d") {
+    const from = startOfDay(now);
+    from.setDate(from.getDate() - 89);
+    return { from, to: endOfDay(now) };
+  }
+
+  if (preset === "1y") {
+    const from = startOfDay(now);
+    from.setFullYear(from.getFullYear() - 1);
+    from.setDate(from.getDate() + 1);
+    return { from, to: endOfDay(now) };
+  }
+
+  const from = custom?.from ? startOfDay(new Date(custom.from)) : startOfDay(now);
+  const to = custom?.to ? endOfDay(new Date(custom.to)) : endOfDay(now);
+  if (from > to) return { from: to, to: from };
+  return { from, to };
+}
+
+export function filterTradesByRange(
+  trades: ExecutedTrade[],
+  range: TradeHistoryRange | null
+): ExecutedTrade[] {
+  if (!range) return trades;
+
+  const fromMs = range.from.getTime();
+  const toMs = range.to.getTime();
+
+  return trades.filter((trade) => {
+    const executedAt = new Date(trade.executed_at).getTime();
+    return executedAt >= fromMs && executedAt <= toMs;
+  });
+}
+
+export function computeTradeStats(trades: ExecutedTrade[]): TradeStats {
   const live = trades.filter((t) => t.status === "open").length;
   const closed = trades.filter((t) => t.status === "closed").length;
   const totalPnl = trades.reduce((sum, t) => sum + t.profit_loss, 0);
@@ -216,6 +295,35 @@ export function getLifetimeTradeStats() {
     totalPnl,
     wins,
     losses,
-    pairs: PAIRS.length,
   };
+}
+
+export function formatTradeHistoryRangeLabel(
+  preset: TradeHistoryRangePreset,
+  range: TradeHistoryRange | null
+): string {
+  if (preset === "all" || !range) {
+    return "All time";
+  }
+
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  if (preset === "7d") return "Last 7 days";
+  if (preset === "30d") return "Last 30 days";
+  if (preset === "90d") return "Last 90 days";
+  if (preset === "1y") return "Last 12 months";
+
+  return `${formatter.format(range.from)} – ${formatter.format(range.to)}`;
+}
+
+export function getLifetimeTrades(): ExecutedTrade[] {
+  return mockLifetimeTrades;
+}
+
+export function getLifetimeTradeStats(): TradeStats {
+  return computeTradeStats(mockLifetimeTrades);
 }

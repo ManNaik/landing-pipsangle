@@ -1,10 +1,22 @@
 import Link from "next/link";
+import { useState } from "react";
 import { LIFETIME_LOCK_OFFER, PRICING_TIERS } from "../../lib/pricing";
-import type { SubscriptionInfo } from "../../lib/subscriptionData";
+import {
+  resolveSubscriptionScreen,
+  type SubscriptionInfo,
+  type SubscriptionScreen,
+} from "../../lib/subscriptionData";
+import type { AuthUser } from "../../lib/types";
 import { FREE_TRIAL_DAYS } from "../../lib/trial";
+import { SubscriptionExpiredScreen } from "./subscription/SubscriptionExpiredScreen";
+import { SubscriptionExtendScreen } from "./subscription/SubscriptionExtendScreen";
+import { SubscriptionRenewScreen } from "./subscription/SubscriptionRenewScreen";
 
 type ActiveSubscriptionCardProps = {
+  user: AuthUser;
   subscription: SubscriptionInfo;
+  onSubscriptionChange: () => void;
+  initialScreen?: SubscriptionScreen | null;
 };
 
 function PremiumPlanIcon({ className = "h-6 w-6" }: { className?: string }) {
@@ -264,11 +276,13 @@ function PaidSubscriptionCard({
   tier,
   isPremium,
   isBasic,
+  onExtend,
 }: {
   subscription: SubscriptionInfo;
   tier: (typeof PRICING_TIERS)[number];
   isPremium: boolean;
   isBasic: boolean;
+  onExtend?: () => void;
 }) {
   const plan = subscription.plan!;
   const highlightFeatures =
@@ -373,6 +387,16 @@ function PaidSubscriptionCard({
           <p className="text-[11px] text-zinc-600">
             {subscription.billingCycle} billing cycle
           </p>
+
+          {onExtend && subscription.status === "active" && (
+            <button
+              type="button"
+              onClick={onExtend}
+              className="inline-flex rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/15"
+            >
+              Extend subscription
+            </button>
+          )}
         </div>
       </div>
 
@@ -398,7 +422,17 @@ function PaidSubscriptionCard({
   );
 }
 
-export function ActiveSubscriptionCard({ subscription }: ActiveSubscriptionCardProps) {
+export function ActiveSubscriptionCard({
+  user,
+  subscription,
+  onSubscriptionChange,
+  initialScreen = null,
+}: ActiveSubscriptionCardProps) {
+  const [forcedScreen, setForcedScreen] = useState<SubscriptionScreen | null>(
+    initialScreen
+  );
+
+  const screen = resolveSubscriptionScreen(subscription, forcedScreen);
   const { plan } = subscription;
   const isPremium = plan === "Premium";
   const isBasic = plan === "Basic";
@@ -407,15 +441,83 @@ export function ActiveSubscriptionCard({ subscription }: ActiveSubscriptionCardP
 
   const tier = PRICING_TIERS.find((t) => t.name === plan);
 
+  const sectionTitle =
+    screen === "expired"
+      ? "Subscription status"
+      : screen === "renew"
+        ? "Renewal"
+        : screen === "extend"
+          ? "Extend access"
+          : "Active subscription";
+
+  const sectionDescription =
+    screen === "expired"
+      ? "Restore signals and automation"
+      : screen === "renew"
+        ? "Keep uninterrupted access"
+        : screen === "extend"
+          ? "Add time with Pip Coins"
+          : isTrial
+            ? "Your free trial access"
+            : "Your current plan and billing cycle";
+
+  if (screen === "expired" && hasPlan) {
+    return (
+      <section className="flex min-w-0 flex-col gap-3">
+        <div>
+          <h2 className="text-base font-medium text-white">{sectionTitle}</h2>
+          <p className="mt-0.5 text-sm text-zinc-500">{sectionDescription}</p>
+        </div>
+        <SubscriptionExpiredScreen
+          user={user}
+          subscription={subscription}
+          onRenewed={onSubscriptionChange}
+        />
+      </section>
+    );
+  }
+
+  if (screen === "renew" && hasPlan) {
+    return (
+      <section className="flex min-w-0 flex-col gap-3">
+        <div>
+          <h2 className="text-base font-medium text-white">{sectionTitle}</h2>
+          <p className="mt-0.5 text-sm text-zinc-500">{sectionDescription}</p>
+        </div>
+        <SubscriptionRenewScreen
+          user={user}
+          subscription={subscription}
+          onRenewed={onSubscriptionChange}
+          onExtend={
+            subscription.isTrial ? undefined : () => setForcedScreen("extend")
+          }
+        />
+      </section>
+    );
+  }
+
+  if (screen === "extend" && hasPlan) {
+    return (
+      <section className="flex min-w-0 flex-col gap-3">
+        <div>
+          <h2 className="text-base font-medium text-white">{sectionTitle}</h2>
+          <p className="mt-0.5 text-sm text-zinc-500">{sectionDescription}</p>
+        </div>
+        <SubscriptionExtendScreen
+          user={user}
+          subscription={subscription}
+          onExtended={onSubscriptionChange}
+          onBack={() => setForcedScreen(null)}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="flex min-w-0 flex-col gap-3">
       <div>
-        <h2 className="text-base font-medium text-white">Active subscription</h2>
-        <p className="mt-0.5 text-sm text-zinc-500">
-          {isTrial
-            ? "Your free trial access"
-            : "Your current plan and billing cycle"}
-        </p>
+        <h2 className="text-base font-medium text-white">{sectionTitle}</h2>
+        <p className="mt-0.5 text-sm text-zinc-500">{sectionDescription}</p>
       </div>
 
       <div
@@ -452,6 +554,7 @@ export function ActiveSubscriptionCard({ subscription }: ActiveSubscriptionCardP
                 tier={tier}
                 isPremium={isPremium}
                 isBasic={isBasic}
+                onExtend={() => setForcedScreen("extend")}
               />
             )
           ) : (
@@ -466,6 +569,26 @@ export function ActiveSubscriptionCard({ subscription }: ActiveSubscriptionCardP
             </div>
           )}
         </div>
+
+        {hasPlan && (
+          <div className="relative mt-5 flex flex-wrap gap-2 border-t border-zinc-800/80 pt-4">
+            <Link
+              href="/subscription"
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200"
+            >
+              Manage subscription
+            </Link>
+            {!isTrial && subscription.status === "active" && (
+              <button
+                type="button"
+                onClick={() => setForcedScreen("extend")}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200"
+              >
+                Extend
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

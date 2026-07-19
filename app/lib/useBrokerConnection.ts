@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  fetchBrokerConnection,
+  skipBrokerConnectionApi,
+  submitBrokerConnectionApi,
+} from "./brokerApi";
+import {
   completeBrokerVerification,
   DEMO_AUTO_VERIFY_MS,
   getBrokerConnection,
-  getBrokerConnectionStatus,
   markConnectedMessageShown,
   onBrokerConnectionChange,
   shouldShowConnectedMessage,
@@ -15,6 +19,7 @@ import {
   type BrokerConnectionData,
   type BrokerConnectionStatus,
 } from "./brokerConnection";
+import { isMockApiEnabled } from "./mockData";
 
 type UseBrokerConnectionOptions = {
   userId: string;
@@ -23,19 +28,32 @@ type UseBrokerConnectionOptions = {
 
 export function useBrokerConnection({ userId, userEmail }: UseBrokerConnectionOptions) {
   const [connection, setConnection] = useState<BrokerConnectionData>(() =>
-    getBrokerConnection(userId)
+    isMockApiEnabled() ? getBrokerConnection(userId) : { status: "none" }
   );
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [showConnectedMessage, setShowConnectedMessage] = useState(false);
 
-  const refresh = useCallback(() => {
-    const next = getBrokerConnection(userId);
-    setConnection(next);
-    setShowConnectedMessage(shouldShowConnectedMessage(userId));
+  const refresh = useCallback(async () => {
+    if (isMockApiEnabled()) {
+      const next = getBrokerConnection(userId);
+      setConnection(next);
+      setShowConnectedMessage(shouldShowConnectedMessage(userId));
+      return;
+    }
+
+    try {
+      const next = await fetchBrokerConnection();
+      setConnection(next);
+      setShowConnectedMessage(
+        next.status === "connected" && shouldShowConnectedMessage(userId)
+      );
+    } catch {
+      setConnection({ status: "none" });
+    }
   }, [userId]);
 
   useEffect(() => {
-    refresh();
+    void refresh();
     return onBrokerConnectionChange(refresh);
   }, [refresh]);
 
@@ -49,20 +67,36 @@ export function useBrokerConnection({ userId, userEmail }: UseBrokerConnectionOp
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("verify") === "1" && connection.status === "pending") {
-      completeBrokerVerification(userId);
+      if (isMockApiEnabled()) {
+        completeBrokerVerification(userId);
+      } else {
+        void refresh();
+      }
     }
-  }, [connection.status, userId]);
+  }, [connection.status, userId, refresh]);
 
   useEffect(() => {
     if (connection.status !== "pending") return;
-    if (userEmail?.toLowerCase() !== "demo@pipangel.com") return;
+    if (isMockApiEnabled()) {
+      if (userEmail?.toLowerCase() !== "demo@pipangel.com") return;
+      const timer = window.setTimeout(() => {
+        completeBrokerVerification(userId);
+      }, DEMO_AUTO_VERIFY_MS);
+      return () => window.clearTimeout(timer);
+    }
 
-    const timer = window.setTimeout(() => {
-      completeBrokerVerification(userId);
-    }, DEMO_AUTO_VERIFY_MS);
+    const poll = window.setInterval(() => {
+      void refresh();
+    }, 2000);
+    const timeout = window.setTimeout(() => {
+      window.clearInterval(poll);
+    }, DEMO_AUTO_VERIFY_MS + 4000);
 
-    return () => window.clearTimeout(timer);
-  }, [connection.status, userEmail, userId]);
+    return () => {
+      window.clearInterval(poll);
+      window.clearTimeout(timeout);
+    };
+  }, [connection.status, userEmail, userId, refresh]);
 
   const openOnboarding = useCallback(() => {
     setOnboardingOpen(true);
@@ -72,29 +106,43 @@ export function useBrokerConnection({ userId, userEmail }: UseBrokerConnectionOp
     setOnboardingOpen(false);
   }, []);
 
-  const handleSkip = useCallback(() => {
-    skipBrokerConnection(userId);
+  const handleSkip = useCallback(async () => {
+    if (isMockApiEnabled()) {
+      skipBrokerConnection(userId);
+    } else {
+      const next = await skipBrokerConnectionApi();
+      setConnection(next);
+    }
     setOnboardingOpen(false);
   }, [userId]);
 
   const handleSubmit = useCallback(
-    (payload: BrokerConnectPayload) => {
-      submitBrokerConnection(userId, payload);
+    async (payload: BrokerConnectPayload) => {
+      if (isMockApiEnabled()) {
+        submitBrokerConnection(userId, payload);
+      } else {
+        const next = await submitBrokerConnectionApi(payload);
+        setConnection(next);
+      }
     },
     [userId]
   );
 
   const handleCompleteVerification = useCallback(() => {
-    completeBrokerVerification(userId);
+    if (isMockApiEnabled()) {
+      completeBrokerVerification(userId);
+    } else {
+      void refresh();
+    }
     setOnboardingOpen(false);
-  }, [userId]);
+  }, [userId, refresh]);
 
   const dismissConnectedMessage = useCallback(() => {
     markConnectedMessageShown(userId);
     setShowConnectedMessage(false);
   }, [userId]);
 
-  const status: BrokerConnectionStatus = connection.status ?? getBrokerConnectionStatus(userId);
+  const status: BrokerConnectionStatus = connection.status ?? "none";
 
   return {
     connection,

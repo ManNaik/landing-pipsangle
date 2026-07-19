@@ -6,6 +6,7 @@ import type { Signal, SignalStatus } from "../../lib/types";
 
 type SignalsListProps = {
   signals: Signal[];
+  variant?: "default" | "embedded";
 };
 
 function statusBadgeClass(status: SignalStatus): string {
@@ -25,13 +26,15 @@ function statusBadgeClass(status: SignalStatus): string {
   }
 }
 
-export function SignalsList({ signals }: SignalsListProps) {
+export function SignalsList({ signals, variant = "default" }: SignalsListProps) {
+  const embedded = variant === "embedded";
+
   return (
-    <section className="flex h-[26rem] min-w-0 flex-col gap-3 sm:h-[30rem]">
+    <section className={`flex min-w-0 flex-col gap-3 ${embedded ? "h-[28rem]" : "h-[26rem] sm:h-[30rem]"}`}>
       <div className="shrink-0">
-        <h2 className="text-base font-medium text-white">Signals sent</h2>
+        <h2 className="text-base font-medium text-white">Detected Signals</h2>
         <p className="mt-0.5 text-sm text-zinc-500">
-          All trade signals delivered to your account
+          Potential setups from the system
         </p>
       </div>
 
@@ -39,7 +42,7 @@ export function SignalsList({ signals }: SignalsListProps) {
         {signals.map((signal) => (
           <article
             key={signal.id}
-            className="rounded-xl bg-zinc-900/40 px-4 py-3.5"
+            className="rounded-xl border border-blue-500/10 bg-blue-500/[0.06] px-4 py-3.5"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">

@@ -5,6 +5,8 @@ export type ProfitDataPoint = {
   date: string;
   profit: number;
   cumulative: number;
+  equity: number;
+  drawdownPercent: number;
 };
 
 export type ProfitRange = {
@@ -13,6 +15,7 @@ export type ProfitRange = {
 };
 
 export const ALL_TIME_PROFIT = 12_847.32;
+export const BASE_EQUITY = 25_000;
 
 function startOfDay(date: Date): Date {
   const d = new Date(date);
@@ -95,6 +98,27 @@ export function getProfitData(range: ProfitRange): ProfitDataPoint[] {
 
   const points: ProfitDataPoint[] = [];
   let cumulative = 0;
+  let peakEquity = BASE_EQUITY;
+
+  const pushPoint = (label: string, date: string, profit: number) => {
+    cumulative += profit;
+    const roundedCumulative = Math.round(cumulative * 100) / 100;
+    const equity = Math.round((BASE_EQUITY + roundedCumulative) * 100) / 100;
+    peakEquity = Math.max(peakEquity, equity);
+    const drawdownPercent =
+      peakEquity > 0
+        ? Math.round(((peakEquity - equity) / peakEquity) * 1000) / 10
+        : 0;
+
+    points.push({
+      label,
+      date,
+      profit,
+      cumulative: roundedCumulative,
+      equity,
+      drawdownPercent,
+    });
+  };
 
   if (hourly) {
     for (let hour = 0; hour < 24; hour += 1) {
@@ -102,13 +126,7 @@ export function getProfitData(range: ProfitRange): ProfitDataPoint[] {
       date.setHours(hour, 0, 0, 0);
       if (date > range.to) break;
       const profit = hourlyProfitForHour(range.from, hour);
-      cumulative += profit;
-      points.push({
-        label: formatLabel(date, true),
-        date: date.toISOString(),
-        profit,
-        cumulative: Math.round(cumulative * 100) / 100,
-      });
+      pushPoint(formatLabel(date, true), date.toISOString(), profit);
     }
     return points;
   }
@@ -118,13 +136,7 @@ export function getProfitData(range: ProfitRange): ProfitDataPoint[] {
 
   while (cursor <= end) {
     const profit = dailyProfitForDate(cursor);
-    cumulative += profit;
-    points.push({
-      label: formatLabel(cursor, false),
-      date: cursor.toISOString(),
-      profit,
-      cumulative: Math.round(cumulative * 100) / 100,
-    });
+    pushPoint(formatLabel(cursor, false), cursor.toISOString(), profit);
     cursor.setDate(cursor.getDate() + 1);
   }
 

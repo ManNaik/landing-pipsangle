@@ -28,7 +28,11 @@ export function DashboardShell({ user, brandName, children }: DashboardShellProp
       }}
     >
       <div className="flex min-h-screen bg-zinc-950">
-        <DashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <DashboardSidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          brandName={brandName}
+        />
 
         <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
           <DashboardTopbar
