@@ -25,7 +25,7 @@ export const LIFETIME_LOCK_OFFER = {
   eyebrow: "Founding member offer",
   headline: "Your rate is protected for life",
   description:
-    "The first 50 subscribers keep launch pricing permanently — $29 per week on Basic, $99 per 28 days on Premium — even when standard rates return.",
+    "The first 50 subscribers keep launch pricing permanently — $30 per week on Basic, $99 per 28 days on Premium — even when standard rates return.",
   seatsLabel: "50 founding seats",
   heroBadge: "First 50 clients · lifetime price lock",
   cardBadge: "First 50 · lifetime lock",
@@ -37,8 +37,8 @@ export const PRICING_TIERS: PricingTier[] = [
     name: "Basic",
     tagline: "Signals and automation with built-in risk guardrails.",
     originalPrice: 79,
-    price: 29,
-    discountPercent: 63,
+    price: 30,
+    discountPercent: 62,
     periodDays: 7,
     periodLabel: "7 days",
     isPopular: false,
@@ -138,7 +138,7 @@ export const PRICING_FAQ_TEASER = [
   {
     question: "What is the lifetime price lock?",
     answer:
-      "The first 50 clients who subscribe lock in their discounted rate forever. Basic stays at $29 per 7 days and Premium at $99 per 28 days — even if standard pricing returns to $79 or $299 later.",
+      "The first 50 clients who subscribe lock in their discounted rate forever. Basic stays at $30 per 7 days and Premium at $99 per 28 days — even if standard pricing returns to $79 or $299 later.",
   },
   {
     question: "Is there a free trial?",

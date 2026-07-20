@@ -152,12 +152,21 @@ export function DashboardStickyHeader({ brokerStatus }: DashboardStickyHeaderPro
     <>
       <header className="sticky top-14 z-20 -mx-4 border-b border-zinc-800/80 bg-zinc-950/90 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
             <UserAvatar name={stats.displayName} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="truncate text-sm font-semibold text-white">{stats.displayName}</p>
                 <ConnectionPill status={brokerStatus} />
+                {user.trial_active && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    </span>
+                    Free trial
+                  </span>
+                )}
               </div>
               <p className="truncate text-xs text-zinc-500">{user.email}</p>
             </div>

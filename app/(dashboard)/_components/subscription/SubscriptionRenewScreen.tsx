@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback } from "react";
+import { isMockApiEnabled } from "../../../lib/mockData";
 import { PRICING_TIERS } from "../../../lib/pricing";
 import { renewSubscriptionPeriod } from "../../../lib/storeData";
 import type { SubscriptionInfo } from "../../../lib/subscriptionData";
 import type { AuthUser } from "../../../lib/types";
+import { PayPalCheckout } from "./PayPalCheckout";
 import { PlanPriceSummary, SecondaryPricingLink } from "./SubscriptionShared";
 
 type SubscriptionRenewScreenProps = {
@@ -20,20 +22,18 @@ export function SubscriptionRenewScreen({
   onRenewed,
   onExtend,
 }: SubscriptionRenewScreenProps) {
-  const [renewing, setRenewing] = useState(false);
   const tier = PRICING_TIERS.find((item) => item.name === subscription.plan);
   const daysLabel =
     subscription.remainingDays === 1
       ? "1 day left"
       : `${subscription.remainingDays} days left`;
 
-  async function handleRenew() {
-    setRenewing(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 500));
-    renewSubscriptionPeriod(user);
-    setRenewing(false);
+  const handlePaid = useCallback(() => {
+    if (isMockApiEnabled()) {
+      renewSubscriptionPeriod(user);
+    }
     onRenewed();
-  }
+  }, [user, onRenewed]);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-950/25 via-zinc-900/70 to-zinc-950/90 p-5 sm:p-6">
@@ -80,18 +80,17 @@ export function SubscriptionRenewScreen({
           <div className="space-y-4">
             <PlanPriceSummary subscription={subscription} />
 
-            <button
-              type="button"
-              disabled={renewing || !tier}
-              onClick={() => void handleRenew()}
-              className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {renewing
-                ? "Processing renewal…"
-                : subscription.isTrial
-                  ? `Start paid plan · $${tier?.price ?? "—"}`
-                  : `Renew now · $${tier?.price ?? "—"}`}
-            </button>
+            {tier && (
+              <PayPalCheckout
+                planSlug={tier.id}
+                label={
+                  subscription.isTrial
+                    ? `Start paid plan · $${tier.price} / ${tier.periodLabel}`
+                    : `Renew now · $${tier.price} / ${tier.periodLabel}`
+                }
+                onSuccess={handlePaid}
+              />
+            )}
 
             {onExtend && !subscription.isTrial && (
               <button

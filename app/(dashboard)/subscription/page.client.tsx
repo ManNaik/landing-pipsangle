@@ -5,6 +5,7 @@ import type { SubscriptionScreen } from "../../lib/subscriptionData";
 import { useAuth } from "../../lib/useAuth";
 import { useSubscriptionInfo } from "../../lib/useSubscriptionInfo";
 import { ActiveSubscriptionCard } from "../_components/ActiveSubscriptionCard";
+import { SubscriptionPlansBuy } from "../_components/subscription/SubscriptionPlansBuy";
 
 const VALID_VIEWS = new Set<SubscriptionScreen>([
   "extend",
@@ -27,9 +28,15 @@ export default function SubscriptionPage() {
 
   if (!user || !subscription) return null;
 
+  const showBuyPlans =
+    subscription.isTrial ||
+    subscription.status === "expired" ||
+    subscription.status === "none" ||
+    !subscription.plan;
+
   return (
-    <div className="mx-auto max-w-4xl">
-      <header className="mb-5">
+    <div className="mx-auto max-w-4xl space-y-8">
+      <header>
         <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-emerald-400/70">
           Account billing
         </p>
@@ -37,7 +44,9 @@ export default function SubscriptionPage() {
           Subscription
         </h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Manage renewals, extensions, and plan access for your account.
+          {subscription.isTrial
+            ? "Your free trial is active. Review plans below and upgrade anytime with PayPal."
+            : "Manage renewals, extensions, and plan access for your account."}
         </p>
       </header>
 
@@ -47,6 +56,14 @@ export default function SubscriptionPage() {
         onSubscriptionChange={refresh}
         initialScreen={initialScreen}
       />
+
+      {showBuyPlans && (
+        <SubscriptionPlansBuy
+          currentPlan={subscription.plan}
+          isTrial={subscription.isTrial}
+          onPurchased={refresh}
+        />
+      )}
     </div>
   );
 }

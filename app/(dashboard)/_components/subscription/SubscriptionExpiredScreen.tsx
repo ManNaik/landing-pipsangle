@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { isMockApiEnabled } from "../../../lib/mockData";
 import { PRICING_TIERS } from "../../../lib/pricing";
 import { renewSubscriptionPeriod } from "../../../lib/storeData";
 import type { SubscriptionInfo } from "../../../lib/subscriptionData";
 import type { AuthUser } from "../../../lib/types";
+import { PayPalCheckout } from "./PayPalCheckout";
 import {
   PausedFeaturesList,
   PlanPriceSummary,
@@ -23,18 +25,16 @@ export function SubscriptionExpiredScreen({
   subscription,
   onRenewed,
 }: SubscriptionExpiredScreenProps) {
-  const [renewing, setRenewing] = useState(false);
   const [renewed, setRenewed] = useState(false);
   const tier = PRICING_TIERS.find((item) => item.name === subscription.plan);
 
-  async function handleRenew() {
-    setRenewing(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 500));
-    renewSubscriptionPeriod(user);
+  const handlePaid = useCallback(() => {
+    if (isMockApiEnabled()) {
+      renewSubscriptionPeriod(user);
+    }
     setRenewed(true);
-    setRenewing(false);
     onRenewed();
-  }
+  }, [user, onRenewed]);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-950/30 via-zinc-900/70 to-zinc-950/90 p-5 sm:p-6">
@@ -86,16 +86,13 @@ export function SubscriptionExpiredScreen({
                 Subscription renewed. Welcome back — your dashboard is active again.
               </div>
             ) : (
-              <button
-                type="button"
-                disabled={renewing || !tier}
-                onClick={() => void handleRenew()}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {renewing
-                  ? "Processing renewal…"
-                  : `Renew ${subscription.plan} · $${tier?.price ?? "—"}`}
-              </button>
+              tier && (
+                <PayPalCheckout
+                  planSlug={tier.id}
+                  label={`Renew ${subscription.plan} · $${tier.price} / ${tier.periodLabel}`}
+                  onSuccess={handlePaid}
+                />
+              )
             )}
 
             <Link

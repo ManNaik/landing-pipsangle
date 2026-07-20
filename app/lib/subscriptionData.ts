@@ -112,7 +112,8 @@ export function resolveSubscriptionScreen(
   if (subscription.status === "none") return "none";
   if (subscription.status === "expired") return "expired";
   if (subscription.isTrial) {
-    return subscription.remainingDays <= EXPIRING_SOON_DAYS ? "renew" : "trial";
+    // 2-day trials should show the trial card until the last day.
+    return subscription.remainingDays <= 1 ? "renew" : "trial";
   }
   if (subscription.remainingDays <= EXPIRING_SOON_DAYS) return "renew";
   return "active";

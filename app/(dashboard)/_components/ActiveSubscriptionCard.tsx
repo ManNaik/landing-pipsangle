@@ -224,6 +224,12 @@ function TrialSubscriptionCard({
             <p className="mt-1 text-xs leading-relaxed text-zinc-500">
               Full {plan} access · ${tier.price}/{tier.periodLabel} after trial ends
             </p>
+            <Link
+              href="/subscription"
+              className="mt-3 inline-flex text-xs font-medium text-emerald-400 transition hover:text-emerald-300"
+            >
+              View & buy plans →
+            </Link>
           </div>
         </div>
 
@@ -561,7 +567,7 @@ export function ActiveSubscriptionCard({
             <div className="rounded-xl bg-zinc-900/40 px-4 py-5 text-center">
               <p className="text-sm text-zinc-400">No active subscription</p>
               <Link
-                href="/pricing"
+                href="/subscription"
                 className="mt-3 inline-flex rounded-lg bg-emerald-500/15 px-4 py-2 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/25"
               >
                 View plans

@@ -675,5 +675,5 @@ export function getMockExecutedTrades(limit?: number): ListResponse<ExecutedTrad
 }
 
 export function isMockApiEnabled(): boolean {
-  return !process.env.NEXT_PUBLIC_BACKEND_URL;
+  return process.env.NEXT_PUBLIC_USE_MOCK_API === "true";
 }

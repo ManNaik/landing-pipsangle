@@ -62,7 +62,7 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   });
   const data = await res.json();
   if (!res.ok) {
-    const err = data as { detail?: string; errors?: Record<string, string[]> };
+    const err = data as { detail?: string };
     throw new Error(err.detail ?? `API error: ${res.status}`);
   }
   return data as T;

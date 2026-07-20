@@ -4,14 +4,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { apiPost } from "../lib/api";
 import { notifyAuthChange, setTokens } from "../lib/auth";
-import { FREE_TRIAL_CTA } from "../lib/trial";
+import { FREE_TRIAL_CTA, FREE_TRIAL_DAYS } from "../lib/trial";
 import type { LoginResponse } from "../lib/types";
 
 export function SignupForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const planSlug = searchParams.get("plan") ?? "";
-  const isTrial = searchParams.get("trial") === "1";
+  const planSlug = searchParams.get("plan") || "basic";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,17 +23,17 @@ export function SignupForm() {
     const formData = new FormData(form);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-    const plan = (formData.get("plan_slug") as string) || planSlug;
+    const plan = (formData.get("plan_slug") as string) || planSlug || "basic";
 
     try {
       const result = await apiPost<LoginResponse>("/auth/signup/", {
         email,
         password,
-        plan_slug: plan || undefined,
+        plan_slug: plan,
       });
       setTokens(result.access_token, result.refresh_token);
       notifyAuthChange();
-      router.push("/dashboard");
+      router.push("/subscription");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -49,6 +48,16 @@ export function SignupForm() {
           {error}
         </p>
       )}
+
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
+        <p className="text-sm font-medium text-emerald-200">
+          Starts with a {FREE_TRIAL_DAYS}-day free trial
+        </p>
+        <p className="mt-0.5 text-xs text-emerald-200/70">
+          Full access on signup — pick and pay for a plan anytime from Subscription.
+        </p>
+      </div>
+
       <div>
         <label htmlFor="signup-email" className="block text-sm font-medium text-zinc-300">
           Email
@@ -76,15 +85,13 @@ export function SignupForm() {
           className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-emerald-500/60"
         />
       </div>
-      {planSlug && (
-        <input type="hidden" name="plan_slug" value={planSlug} />
-      )}
+      <input type="hidden" name="plan_slug" value={planSlug} />
       <button
         type="submit"
         disabled={loading}
         className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-600 disabled:opacity-60 min-h-[3rem]"
       >
-        {loading ? "Creating account…" : isTrial ? FREE_TRIAL_CTA : "Create Account"}
+        {loading ? "Starting your free trial…" : FREE_TRIAL_CTA}
       </button>
     </form>
   );
