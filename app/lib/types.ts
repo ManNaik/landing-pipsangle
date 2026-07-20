@@ -83,6 +83,21 @@ export interface Signal {
   closed_at: string | null;
 }
 
+export type ExecutedTradeStatus = "open" | "closed" | "cancelled";
+
+export interface ExecutedTrade {
+  id: string;
+  pair: string;
+  direction: TradeDirection;
+  entry: string;
+  exit: string | null;
+  /** Current market price — only set for open/live positions */
+  current_price?: string | null;
+  profit_loss: number;
+  status: ExecutedTradeStatus;
+  executed_at: string;
+}
+
 export interface BlogPostListItem {
   slug: string;
   title: string;
@@ -177,7 +192,10 @@ export interface AuthUser {
   id: string;
   email: string;
   plan: string | null;
+  plan_slug?: string | null;
   is_staff: boolean;
+  trial_active?: boolean;
+  trial_ends_at?: string | null;
 }
 
 export interface AdminPaginatedResponse<T> {

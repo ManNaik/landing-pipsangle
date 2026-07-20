@@ -3,12 +3,15 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { apiPost } from "../lib/api";
+import { notifyAuthChange, setTokens } from "../lib/auth";
+import { FREE_TRIAL_CTA } from "../lib/trial";
 import type { LoginResponse } from "../lib/types";
 
 export function SignupForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const planSlug = searchParams.get("plan") ?? "";
+  const isTrial = searchParams.get("trial") === "1";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,9 +32,9 @@ export function SignupForm() {
         password,
         plan_slug: plan || undefined,
       });
-      localStorage.setItem("access_token", result.access_token);
-      localStorage.setItem("refresh_token", result.refresh_token);
-      router.push("/");
+      setTokens(result.access_token, result.refresh_token);
+      notifyAuthChange();
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -81,7 +84,7 @@ export function SignupForm() {
         disabled={loading}
         className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-600 disabled:opacity-60 min-h-[3rem]"
       >
-        {loading ? "Creating account…" : "Create Account"}
+        {loading ? "Creating account…" : isTrial ? FREE_TRIAL_CTA : "Create Account"}
       </button>
     </form>
   );

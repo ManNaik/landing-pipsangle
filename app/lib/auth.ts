@@ -3,6 +3,7 @@ import { apiPost, getApiBase } from "./api";
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
+const AUTH_CHANGE_EVENT = "pipangel-auth-change";
 
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -24,13 +25,25 @@ export function clearTokens(): void {
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
+export function notifyAuthChange(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+  }
+}
+
+export function onAuthChange(listener: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(AUTH_CHANGE_EVENT, listener);
+  return () => window.removeEventListener(AUTH_CHANGE_EVENT, listener);
+}
+
 export function isStaffUser(user: AuthUser): boolean {
   return user.is_staff === true;
 }
 
 export async function fetchCurrentUser(token: string): Promise<AuthUser> {
   const base = getApiBase().replace(/\/$/, "");
-  const res = await fetch(`${base}/api/v1/auth/me/`, {
+  const res = await fetch(`${base}/api/v1/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -39,7 +52,7 @@ export async function fetchCurrentUser(token: string): Promise<AuthUser> {
   return res.json() as Promise<AuthUser>;
 }
 
-export async function adminLogin(
+export async function userLogin(
   email: string,
   password: string
 ): Promise<LoginResponse> {
@@ -47,10 +60,25 @@ export async function adminLogin(
     email,
     password,
   });
+  setTokens(response.access_token, response.refresh_token);
+  notifyAuthChange();
+  return response;
+}
+
+export async function adminLogin(
+  email: string,
+  password: string
+): Promise<LoginResponse> {
+  const response = await userLogin(email, password);
   if (!response.user.is_staff) {
     clearTokens();
+    notifyAuthChange();
     throw new Error("Access denied. Staff credentials required.");
   }
-  setTokens(response.access_token, response.refresh_token);
   return response;
+}
+
+export function logout(): void {
+  clearTokens();
+  notifyAuthChange();
 }

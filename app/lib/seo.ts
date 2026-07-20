@@ -219,22 +219,42 @@ export function buildProductOfferSchema(
     name: string;
     description: string;
     price: number;
+    originalPrice?: number;
     url: string;
   }
 ) {
+  const offers: Record<string, unknown> = {
+    "@type": "Offer",
+    price: plan.price,
+    priceCurrency: "USD",
+    url: absoluteUrl(siteUrl, plan.url),
+    availability: "https://schema.org/InStock",
+  };
+
+  if (plan.originalPrice != null && plan.originalPrice > plan.price) {
+    offers.priceSpecification = [
+      {
+        "@type": "UnitPriceSpecification",
+        price: plan.originalPrice,
+        priceCurrency: "USD",
+        priceType: "https://schema.org/ListPrice",
+      },
+      {
+        "@type": "UnitPriceSpecification",
+        price: plan.price,
+        priceCurrency: "USD",
+        priceType: "https://schema.org/SalePrice",
+      },
+    ];
+  }
+
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: plan.name,
     description: plan.description,
     brand: { "@type": "Brand", name: brandName },
-    offers: {
-      "@type": "Offer",
-      price: plan.price,
-      priceCurrency: "USD",
-      url: absoluteUrl(siteUrl, plan.url),
-      availability: "https://schema.org/InStock",
-    },
+    offers,
   };
 }
 

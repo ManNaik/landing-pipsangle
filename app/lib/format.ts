@@ -1,4 +1,4 @@
-import type { SignalStatus } from "./types";
+import type { ExecutedTradeStatus, SignalStatus } from "./types";
 
 export function formatRelativeTime(isoDate: string): string {
   const then = new Date(isoDate).getTime();
@@ -28,4 +28,42 @@ export function formatSignalStatus(status: SignalStatus): string {
 export function formatPipsResult(pips: number, result: string): string {
   const sign = pips >= 0 ? "+" : "";
   return `${sign}${pips} pips`;
+}
+
+export function formatDateTime(isoDate: string): string {
+  return new Date(isoDate).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function isLiveExecutedTrade(status: ExecutedTradeStatus): boolean {
+  return status === "open";
+}
+
+export function formatExecutedTradeStatus(status: ExecutedTradeStatus): string {
+  const labels: Record<ExecutedTradeStatus, string> = {
+    open: "Live",
+    closed: "Closed",
+    cancelled: "Cancelled",
+  };
+  return labels[status] ?? status;
+}
+
+export function formatExecutedTradeProfitLabel(status: ExecutedTradeStatus): string {
+  if (status === "open") return "Unrealized P/L";
+  if (status === "closed") return "Final P/L";
+  return "P/L";
+}
+
+export function formatSignedCurrency(value: number): string {
+  const sign = value >= 0 ? "+" : "";
+  return `${sign}${new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value)}`;
 }

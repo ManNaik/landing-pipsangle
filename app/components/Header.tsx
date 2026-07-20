@@ -4,6 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import type { SiteConfig } from "../lib/types";
+import { logout } from "../lib/auth";
+import { getTrialSignupUrl } from "../lib/trial";
+import { useAuth } from "../lib/useAuth";
+import { FreeTrialBadge } from "./FreeTrialBadge";
 import { LoginModal } from "./LoginModal";
 
 type HeaderProps = {
@@ -13,8 +17,8 @@ type HeaderProps = {
 export function Header({ siteConfig }: HeaderProps) {
   const navigation = siteConfig.navigation;
   const brandName = siteConfig.brand_name;
-  const ctaLabel = siteConfig.header_cta_label;
   const pathname = usePathname();
+  const { user, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -105,14 +109,39 @@ export function Header({ siteConfig }: HeaderProps) {
           </ul>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setLoginOpen(true)}
-            className="hidden rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/20 min-h-[2.75rem] min-w-[2.75rem] md:inline-flex md:items-center md:justify-center"
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            href={getTrialSignupUrl()}
+            className="hidden items-center gap-2 md:inline-flex"
           >
-            {ctaLabel}
-          </button>
+            <FreeTrialBadge variant="compact" />
+          </Link>
+
+          {!loading && user ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="hidden rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-400 transition-all duration-200 hover:bg-emerald-500/20 min-h-[2.75rem] md:inline-flex md:items-center md:justify-center"
+              >
+                Dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="hidden rounded-lg border border-zinc-700 px-3 py-2.5 text-sm text-zinc-300 transition hover:bg-zinc-800 hover:text-white min-h-[2.75rem] md:inline-flex md:items-center md:justify-center"
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setLoginOpen(true)}
+              className="hidden rounded-lg border border-zinc-700 bg-zinc-900/50 px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:border-zinc-600 hover:bg-zinc-800 min-h-[2.75rem] md:inline-flex md:items-center md:justify-center"
+            >
+              Log in
+            </button>
+          )}
 
           {/* Mobile menu button */}
           <button
@@ -189,17 +218,46 @@ export function Header({ siteConfig }: HeaderProps) {
               </li>
             );
           })}
-          <li className="mt-4 pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                setLoginOpen(true);
-              }}
-              className="flex w-full items-center justify-center rounded-lg bg-emerald-500 px-4 py-3.5 text-base font-medium text-white transition-all duration-200 hover:bg-emerald-600 min-h-[3rem] active:scale-[0.98]"
+          <li className="mt-4 pt-2 border-t border-zinc-800/80">
+            <Link
+              href={getTrialSignupUrl()}
+              onClick={() => setMenuOpen(false)}
+              className="mb-3 flex justify-center"
             >
-              {ctaLabel}
-            </button>
+              <FreeTrialBadge variant="default" />
+            </Link>
+            {!loading && user ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMenuOpen(false)}
+                  className="mb-3 flex w-full items-center justify-center rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3.5 text-base font-medium text-emerald-400 transition-all duration-200 hover:bg-emerald-500/20 min-h-[3rem]"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    logout();
+                  }}
+                  className="flex w-full items-center justify-center rounded-lg border border-zinc-700 px-4 py-3.5 text-base font-medium text-zinc-300 transition-all duration-200 hover:bg-zinc-800 min-h-[3rem]"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setLoginOpen(true);
+                }}
+                className="flex w-full items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/50 px-4 py-3.5 text-base font-medium text-white transition-all duration-200 hover:bg-zinc-800 min-h-[3rem] active:scale-[0.98]"
+              >
+                Log in
+              </button>
+            )}
           </li>
         </ul>
       </div>
