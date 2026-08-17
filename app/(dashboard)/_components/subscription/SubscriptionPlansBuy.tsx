@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import {
   formatPrice,
   getDailyPrice,
-  LIFETIME_LOCK_OFFER,
   PRICING_TIERS,
   type PricingTier,
 } from "../../../lib/pricing";
@@ -21,7 +20,7 @@ function FeatureCheck({ included }: { included: boolean }) {
   if (!included) {
     return (
       <span className="flex h-5 w-5 shrink-0 items-center justify-center text-zinc-600" aria-hidden>
-        —
+        -
       </span>
     );
   }
@@ -76,9 +75,6 @@ function PlanBuyCard({
                 {formatPrice(tier.price)}
               </span>
               <span className="text-sm text-zinc-500">/ {tier.periodLabel}</span>
-              <span className="text-sm text-zinc-600 line-through tabular-nums">
-                {formatPrice(tier.originalPrice)}
-              </span>
             </div>
             <p className="mt-1 text-xs text-zinc-500">
               {getDailyPrice(tier.price, tier.periodDays)}
@@ -110,15 +106,13 @@ function PlanBuyCard({
             .map((feature) => (
               <li key={feature.label} className="flex items-start gap-2 text-sm text-zinc-300">
                 <FeatureCheck included />
-                <span className={feature.highlight ? "text-zinc-200" : ""}>{feature.label}</span>
+                <span>{feature.label}</span>
               </li>
             ))}
         </ul>
 
         {tier.id === "premium" && (
-          <p className="mt-3 text-[11px] font-medium text-emerald-300/80">
-            {LIFETIME_LOCK_OFFER.cardBadge}
-          </p>
+          <p className="mt-3 text-[11px] font-medium text-emerald-300/80">Recommended</p>
         )}
       </button>
 

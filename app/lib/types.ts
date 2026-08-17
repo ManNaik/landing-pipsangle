@@ -103,6 +103,14 @@ export interface BlogPostListItem {
   title: string;
   date: string;
   excerpt: string;
+  category?: string;
+  author?: string;
+  read_time?: string;
+  featured?: boolean;
+  tags?: string[];
+  image?: string | null;
+  visual?: string;
+  is_demo?: boolean;
 }
 
 export interface BlogPostDetail extends BlogPostListItem {
@@ -110,6 +118,7 @@ export interface BlogPostDetail extends BlogPostListItem {
   published: boolean;
   created_at: string;
   updated_at: string;
+  intro?: string;
 }
 
 export interface NewsArticleListItem {
@@ -118,6 +127,14 @@ export interface NewsArticleListItem {
   excerpt: string;
   date: string;
   category: string;
+  source?: string;
+  source_url?: string | null;
+  read_time?: string;
+  featured?: boolean;
+  tags?: string[];
+  image?: string | null;
+  visual?: string;
+  is_demo?: boolean;
 }
 
 export interface NewsArticleDetail extends NewsArticleListItem {

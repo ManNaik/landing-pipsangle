@@ -2,9 +2,7 @@ export type PricingTier = {
   id: "basic" | "premium";
   name: string;
   tagline: string;
-  originalPrice: number;
   price: number;
-  discountPercent: number;
   periodDays: 7 | 28;
   periodLabel: string;
   isPopular: boolean;
@@ -12,44 +10,33 @@ export type PricingTier = {
   features: Array<{
     label: string;
     included: boolean;
-    highlight?: boolean;
   }>;
 };
-
-export function computeDiscountPercent(originalPrice: number, salePrice: number): number {
-  return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
-}
-
-export const LIFETIME_LOCK_OFFER = {
-  maxClients: 50,
-  eyebrow: "Founding member offer",
-  headline: "Your rate is protected for life",
-  description:
-    "The first 50 subscribers keep launch pricing permanently — $30 per week on Basic, $99 per 28 days on Premium — even when standard rates return.",
-  seatsLabel: "50 founding seats",
-  heroBadge: "First 50 clients · lifetime price lock",
-  cardBadge: "First 50 · lifetime lock",
-} as const;
 
 export const PRICING_TIERS: PricingTier[] = [
   {
     id: "basic",
     name: "Basic",
-    tagline: "Signals and automation with built-in risk guardrails.",
-    originalPrice: 79,
+    tagline:
+      "A simple way to access PipAngel trading intelligence and automated execution with predefined risk controls.",
     price: 30,
-    discountPercent: 62,
     periodDays: 7,
     periodLabel: "7 days",
     isPopular: false,
-    ctaLabel: "Start 2-day free trial",
+    ctaLabel: "Start Basic Free Trial",
     features: [
-      { label: "Unlimited trade signals", included: true },
-      { label: "Automation access", included: true },
-      { label: "Lower capital utilization", included: true, highlight: true },
-      { label: "Risk percentage cannot be increased", included: true, highlight: true },
-      { label: "Limited leverage options", included: true, highlight: true },
+      { label: "Trading system access", included: true },
+      { label: "Automated trade execution", included: true },
+      { label: "Predefined risk settings", included: true },
+      { label: "MT5 integration", included: true },
+      { label: "IC Markets support", included: true },
+      { label: "Trading dashboard", included: true },
+      { label: "Trade monitoring", included: true },
+      { label: "Live support", included: true },
+      { label: "Performance reporting", included: true },
+      { label: "Full automation controls", included: false },
       { label: "Adjustable risk percentage", included: false },
+      { label: "Advanced risk settings", included: false },
       { label: "Full leverage control", included: false },
       { label: "Maximum capital utilization", included: false },
     ],
@@ -57,23 +44,26 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: "premium",
     name: "Premium",
-    tagline: "Full control over risk, leverage, and capital deployment.",
-    originalPrice: 299,
+    tagline: "Full control over automation, risk settings, and capital deployment.",
     price: 99,
-    discountPercent: 67,
     periodDays: 28,
     periodLabel: "28 days",
     isPopular: true,
-    ctaLabel: "Try Premium free for 2 days",
+    ctaLabel: "Start Premium Free Trial",
     features: [
-      { label: "Unlimited trade signals", included: true },
-      { label: "Full automation access", included: true },
-      { label: "Maximum capital utilization", included: true, highlight: true },
-      { label: "Adjustable risk percentage", included: true, highlight: true },
-      { label: "Full leverage control", included: true, highlight: true },
-      { label: "Priority signal delivery", included: true },
+      { label: "Everything in Basic", included: true },
+      { label: "Full automation controls", included: true },
+      { label: "Adjustable risk percentage", included: true },
       { label: "Advanced risk settings", included: true },
-      { label: "Everything in Basic, unlocked", included: true },
+      { label: "Full leverage control", included: true },
+      { label: "Maximum capital utilization", included: true },
+      { label: "Priority signal delivery", included: true },
+      { label: "Advanced trading controls", included: true },
+      { label: "MT5 integration", included: true },
+      { label: "IC Markets support", included: true },
+      { label: "Trading dashboard", included: true },
+      { label: "Live support", included: true },
+      { label: "Performance reporting", included: true },
     ],
   },
 ];
@@ -93,7 +83,7 @@ export function getDailyPrice(amount: number, periodDays: number): string {
   return `$${daily.toFixed(2)}/day`;
 }
 
-export type ComparisonCell = "yes" | "no" | "limited" | string;
+export type ComparisonCell = string;
 
 export type ComparisonRow = {
   feature: string;
@@ -102,59 +92,103 @@ export type ComparisonRow = {
 };
 
 export const PLAN_COMPARISON: ComparisonRow[] = [
-  { feature: "Trade signals", basic: "Unlimited", premium: "Unlimited" },
-  { feature: "Automation", basic: "Included", premium: "Full access" },
-  {
-    feature: "Capital utilization",
-    basic: "Lower (fixed)",
-    premium: "Maximum (adjustable)",
-  },
-  {
-    feature: "Risk percentage",
-    basic: "Locked — cannot increase",
-    premium: "Fully adjustable",
-  },
-  { feature: "Leverage", basic: "Limited options", premium: "Full control" },
-  { feature: "Priority signal delivery", basic: "no", premium: "yes" },
-  { feature: "Advanced risk settings", basic: "no", premium: "yes" },
+  { feature: "Automation", basic: "Predefined", premium: "Full control" },
+  { feature: "Risk settings", basic: "Predefined", premium: "Adjustable" },
+  { feature: "Leverage", basic: "Limited", premium: "Full control" },
+  { feature: "Capital utilization", basic: "Predefined", premium: "Adjustable" },
+  { feature: "Advanced risk controls", basic: "Limited", premium: "Included" },
+  { feature: "Priority execution", basic: "Not included", premium: "Included" },
+  { feature: "MT5", basic: "Included", premium: "Included" },
+  { feature: "IC Markets", basic: "Included", premium: "Included" },
+  { feature: "Dashboard", basic: "Included", premium: "Included" },
+  { feature: "Live support", basic: "Included", premium: "Included" },
+  { feature: "Performance reporting", basic: "Included", premium: "Included" },
 ];
 
-export const PRICING_VALUE_PROPS = [
+export const PRICING_BENEFITS = [
   {
-    title: "Instant access",
-    description: "Start receiving signals and connect automation the moment you subscribe.",
+    id: "automation",
+    eyebrow: "Trading Automation",
+    description:
+      "Automate trade execution through your connected MT5 account while keeping control through the PipAngel dashboard.",
   },
   {
-    title: "Verified performance",
-    description: "Every trade is published on our transparent performance page.",
+    id: "risk",
+    eyebrow: "Risk Management",
+    description:
+      "Configure how much capital is exposed to each trade and maintain predefined risk limits.",
   },
   {
-    title: "Full control",
-    description: "Adjust risk, pause automation, or disconnect your account anytime.",
+    id: "dashboard",
+    eyebrow: "Live Dashboard",
+    description:
+      "Monitor trades, account activity, automation status, and controls from one dashboard.",
+  },
+  {
+    id: "support",
+    eyebrow: "Live Support",
+    description:
+      "Get assistance with your account, automation setup, and trading dashboard when you need it.",
   },
 ] as const;
 
-export const PRICING_FAQ_TEASER = [
+export const BILLING_STEPS = [
   {
-    question: "What is the lifetime price lock?",
-    answer:
-      "The first 50 clients who subscribe lock in their discounted rate forever. Basic stays at $30 per 7 days and Premium at $99 per 28 days — even if standard pricing returns to $79 or $299 later.",
+    step: "01",
+    title: "Start your 4-day free trial.",
+    description: "Create an account and explore the platform with no payment required to begin.",
   },
+  {
+    step: "02",
+    title: "Choose Basic or Premium.",
+    description: "Select the plan that matches how much control you want over automation and risk.",
+  },
+  {
+    step: "03",
+    title: "Continue after the trial.",
+    description:
+      "Activate your selected plan with PayPal from your account to keep access after the 4-day trial.",
+  },
+  {
+    step: "04",
+    title: "Manage your subscription from your account.",
+    description: "Review plan status, trial timing, and PayPal checkout from your PipAngel account.",
+  },
+] as const;
+
+export const PRICING_FAQ = [
   {
     question: "Is there a free trial?",
+    answer: "Every new account receives a 4-day free trial.",
+  },
+  {
+    question: "What happens after the free trial?",
     answer:
-      "Yes — every new account gets a 2-day free trial with full access to signals and automation.",
+      "Trial access lasts 4 days. To continue after the trial, activate Basic or Premium with PayPal from your account. If a plan is not activated, trial access ends.",
   },
   {
-    question: "Can I upgrade from Basic to Premium?",
-    answer: "Yes — upgrade anytime from your dashboard to unlock full risk and leverage controls.",
+    question: "Can I change my plan?",
+    answer:
+      "You can select Basic or Premium from your account and activate the plan with PayPal.",
   },
   {
-    question: "What happens when my plan expires?",
-    answer: "Signal delivery and automation pause until you renew. Your settings are saved.",
+    question: "Can I cancel?",
+    answer:
+      "Plan selection and PayPal checkout are managed from your PipAngel account. For billing questions, contact support.",
   },
   {
-    question: "Is there a performance guarantee?",
-    answer: "We publish every trade publicly. Review our track record before you subscribe.",
+    question: "What payment methods are supported?",
+    answer: "Paid plans are activated through PayPal.",
   },
+  {
+    question: "Do I need a trading account?",
+    answer:
+      "Automated execution requires a connected IC Markets MetaTrader 5 account. You can still review the dashboard and performance data during your trial.",
+  },
+] as const;
+
+export const PRICING_TRIAL_POINTS = [
+  { value: "4 DAYS", label: "Free trial on every plan" },
+  { value: "FULL ACCESS", label: "Explore the available controls" },
+  { value: "NO COMMITMENT", label: "No payment required to start" },
 ] as const;

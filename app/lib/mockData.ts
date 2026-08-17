@@ -17,6 +17,8 @@ import type {
   TradeAccuracy,
   ExecutedTrade,
 } from "./types";
+import { DUMMY_BLOG, blogArticleToHtml } from "./blogContent";
+import { DUMMY_NEWS } from "./newsContent";
 
 const now = new Date();
 const daysAgo = (n: number) =>
@@ -25,6 +27,7 @@ const hoursAgo = (n: number) =>
   new Date(now.getTime() - n * 60 * 60 * 1000).toISOString();
 
 export function getMockSiteConfig(): SiteConfig {
+  // Always return the shared default (already free of /forex-signals nav).
   return defaultSiteConfig;
 }
 
@@ -437,7 +440,7 @@ const homeBlocks: ContentBlock[] = [
     body: "",
     metadata: {
       cards: [
-        { title: "Forex Signals", description: "Live trade setups with full risk plan.", url: "/forex-signals" },
+        { title: "Forex Signals", description: "Live trade setups with full risk plan.", url: "/#forex-signals" },
         { title: "Automation", description: "Hands-free execution with risk controls.", url: "/automated-forex-trading" },
         { title: "Performance", description: "Transparent track record and stats.", url: "/trading-performance" },
       ],
@@ -515,14 +518,6 @@ const pageBlocks: Record<string, ContentBlock> = {
     metadata: {},
     updated_at: daysAgo(30),
   },
-  "careers.page": {
-    key: "careers.page",
-    title: "Careers",
-    subtitle: "Join our team.",
-    body: "We're building the future of accessible forex trading tools.",
-    metadata: {},
-    updated_at: daysAgo(30),
-  },
   "terms.page": {
     key: "terms.page",
     title: "Terms of Service",
@@ -555,7 +550,7 @@ export const mockFaqItems: FaqItem[] = [
   {
     id: "faq3",
     question: "Is there a free trial?",
-    answer: "New accounts get a 2-day free trial to explore signals and automation.",
+    answer: "New accounts get a 4-day free trial to explore the platform.",
   },
 ];
 
@@ -580,73 +575,86 @@ export const mockCommunityMessages: CommunityMessage[] = [
   },
 ];
 
-export const mockBlogPosts: BlogPostListItem[] = [
-  {
-    slug: "how-to-read-forex-signals",
-    title: "How to Read Forex Signals Like a Pro",
-    date: daysAgo(5),
-    excerpt: "Learn to interpret entry, stop loss, and take profit levels on every signal.",
-  },
-  {
-    slug: "automation-risk-management",
-    title: "Risk Management for Automated Trading",
-    date: daysAgo(12),
-    excerpt: "Set position sizing and drawdown limits before enabling automation.",
-  },
-];
+export const mockBlogPosts: BlogPostListItem[] = DUMMY_BLOG.map((article) => ({
+  slug: article.slug,
+  title: article.title,
+  date: article.publishedAt,
+  excerpt: article.excerpt,
+  category: article.category,
+  author: article.author,
+  read_time: article.readTime,
+  featured: article.featured,
+  tags: article.tags,
+  image: article.image,
+  visual: article.visual,
+  is_demo: article.isDemo,
+}));
 
-export const mockBlogDetails: Record<string, BlogPostDetail> = {
-  "how-to-read-forex-signals": {
-    ...mockBlogPosts[0],
-    content:
-      "<p>Every PipAngel signal includes a clear trade plan: entry price, stop loss, take profit, and risk-reward ratio.</p>",
-    published: true,
-    created_at: daysAgo(5),
-    updated_at: daysAgo(5),
-  },
-  "automation-risk-management": {
-    ...mockBlogPosts[1],
-    content:
-      "<p>Before enabling automation, configure your max risk per trade and daily drawdown limit in the dashboard.</p>",
-    published: true,
-    created_at: daysAgo(12),
-    updated_at: daysAgo(12),
-  },
-};
+export const mockBlogDetails: Record<string, BlogPostDetail> = Object.fromEntries(
+  DUMMY_BLOG.map((article) => [
+    article.slug,
+    {
+      slug: article.slug,
+      title: article.title,
+      date: article.publishedAt,
+      excerpt: article.excerpt,
+      category: article.category,
+      author: article.author,
+      read_time: article.readTime,
+      featured: article.featured,
+      tags: article.tags,
+      image: article.image,
+      visual: article.visual,
+      is_demo: article.isDemo,
+      intro: article.intro,
+      content: blogArticleToHtml(article),
+      published: article.status === "published",
+      created_at: article.publishedAt,
+      updated_at: article.updatedAt,
+    } satisfies BlogPostDetail,
+  ])
+);
 
-export const mockNewsArticles: NewsArticleListItem[] = [
-  {
-    slug: "fed-rate-decision-impact",
-    title: "Fed Rate Decision: What It Means for Forex",
-    excerpt: "How the latest FOMC meeting could affect major currency pairs this week.",
-    date: daysAgo(2),
-    category: "Macro",
-  },
-  {
-    slug: "eur-usd-weekly-outlook",
-    title: "EUR/USD Weekly Outlook",
-    excerpt: "Key levels and bias for the week ahead on the most traded pair.",
-    date: daysAgo(6),
-    category: "Analysis",
-  },
-];
+export const mockNewsArticles: NewsArticleListItem[] = DUMMY_NEWS.map((article) => ({
+  slug: article.slug,
+  title: article.title,
+  excerpt: article.summary,
+  date: article.publishedAt,
+  category: article.category,
+  source: article.source,
+  source_url: article.sourceUrl,
+  read_time: article.readTime,
+  featured: article.featured,
+  tags: article.tags,
+  image: article.image,
+  visual: article.visual,
+  is_demo: article.isDemo,
+}));
 
-export const mockNewsDetails: Record<string, NewsArticleDetail> = {
-  "fed-rate-decision-impact": {
-    ...mockNewsArticles[0],
-    content: "<p>The Federal Reserve's latest decision has shifted rate expectations for Q2.</p>",
-    published: true,
-    created_at: daysAgo(2),
-    updated_at: daysAgo(2),
-  },
-  "eur-usd-weekly-outlook": {
-    ...mockNewsArticles[1],
-    content: "<p>EUR/USD remains range-bound with support at 1.0820 and resistance at 1.0920.</p>",
-    published: true,
-    created_at: daysAgo(6),
-    updated_at: daysAgo(6),
-  },
-};
+export const mockNewsDetails: Record<string, NewsArticleDetail> = Object.fromEntries(
+  DUMMY_NEWS.map((article) => [
+    article.slug,
+    {
+      slug: article.slug,
+      title: article.title,
+      excerpt: article.summary,
+      date: article.publishedAt,
+      category: article.category,
+      source: article.source,
+      source_url: article.sourceUrl,
+      read_time: article.readTime,
+      featured: article.featured,
+      tags: article.tags,
+      image: article.image,
+      visual: article.visual,
+      is_demo: article.isDemo,
+      content: article.content,
+      published: article.status === "published",
+      created_at: article.publishedAt,
+      updated_at: article.updatedAt,
+    } satisfies NewsArticleDetail,
+  ])
+);
 
 export function getMockContentBlock(key: string): ContentBlock | null {
   return pageBlocks[key] ?? null;

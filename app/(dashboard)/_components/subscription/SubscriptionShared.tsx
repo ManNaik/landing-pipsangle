@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LIFETIME_LOCK_OFFER, PRICING_TIERS } from "../../../lib/pricing";
+import { PRICING_TIERS } from "../../../lib/pricing";
 import type { SubscriptionInfo } from "../../../lib/subscriptionData";
 
 export function PausedFeaturesList() {
@@ -46,14 +46,11 @@ export function PlanPriceSummary({
           <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span className="text-2xl font-bold tabular-nums text-white">${tier.price}</span>
             <span className="text-sm text-zinc-500">/ {tier.periodLabel}</span>
-            <span className="text-sm text-zinc-600 line-through tabular-nums">
-              ${tier.originalPrice}
-            </span>
           </div>
         </div>
         {isPremium && (
           <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300/90">
-            {LIFETIME_LOCK_OFFER.cardBadge}
+            Premium
           </span>
         )}
       </div>

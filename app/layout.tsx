@@ -101,7 +101,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-zinc-950 text-zinc-100 antialiased overflow-x-hidden min-w-0`}
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-zinc-950 text-zinc-100 antialiased overflow-x-clip min-w-0`}
       >
         <script
           type="application/ld+json"
