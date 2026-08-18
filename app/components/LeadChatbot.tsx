@@ -13,6 +13,7 @@ import {
   LEAD_SUCCESS_MESSAGE,
   SESSION_DONE_KEY,
   SESSION_SEEN_KEY,
+  OPEN_LIVE_SUPPORT_EVENT,
   type LeadChatAnswers,
   type LeadChatButton,
   type LeadChatStep,
@@ -54,6 +55,11 @@ export function LeadChatbot() {
       sessionStorage.setItem(SESSION_SEEN_KEY, "1");
     }
   }, []);
+
+  useEffect(() => {
+    window.addEventListener(OPEN_LIVE_SUPPORT_EVENT, openPanel);
+    return () => window.removeEventListener(OPEN_LIVE_SUPPORT_EVENT, openPanel);
+  }, [openPanel]);
 
   useEffect(() => {
     setMounted(true);

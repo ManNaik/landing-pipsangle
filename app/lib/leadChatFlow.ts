@@ -44,7 +44,7 @@ export const LEAD_CHAT_STEPS: Record<
     id: "interest",
     message: "What are you most interested in?",
     buttons: [
-      { label: "Forex signals", value: "signals", action: "next" },
+      { label: "Market intelligence", value: "signals", action: "next" },
       { label: "Automation", value: "automation", action: "next" },
       { label: "Both", value: "both", action: "next" },
       { label: "Just exploring", value: "exploring", action: "next" },
@@ -79,6 +79,7 @@ export const LEAD_SUCCESS_MESSAGE =
 export const SESSION_SEEN_KEY = "pipangel-lead-chat-seen";
 export const SESSION_DONE_KEY = "pipangel-lead-chat-done";
 export const AUTO_OPEN_DELAY_MS = 5000;
+export const OPEN_LIVE_SUPPORT_EVENT = "pipangel-open-live-support";
 
 export function getSignupUrl(plan?: LeadPlanInterest): string {
   if (plan === "starter") return "/signup?plan=starter";
@@ -88,7 +89,7 @@ export function getSignupUrl(plan?: LeadPlanInterest): string {
 
 export function getInterestLabel(value: LeadInterest): string {
   const map: Record<LeadInterest, string> = {
-    signals: "Forex signals",
+    signals: "Market intelligence",
     automation: "Automation",
     both: "Both",
     exploring: "Just exploring",

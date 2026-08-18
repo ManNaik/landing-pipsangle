@@ -1,7 +1,10 @@
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import { safeApiGet } from "../lib/api";
-import { defaultSiteConfig } from "../lib/defaultSiteConfig";
+import {
+  defaultSiteConfig,
+  sanitizeSiteConfig,
+} from "../lib/defaultSiteConfig";
 import type { SiteConfig } from "../lib/types";
 
 export default async function SiteLayout({
@@ -10,7 +13,7 @@ export default async function SiteLayout({
   children: React.ReactNode;
 }>) {
   const config = await safeApiGet<SiteConfig>("/site-config/", 3600);
-  const siteConfig = config ?? defaultSiteConfig;
+  const siteConfig = sanitizeSiteConfig(config ?? defaultSiteConfig);
 
   return (
     <>

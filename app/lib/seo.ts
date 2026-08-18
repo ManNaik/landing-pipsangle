@@ -33,6 +33,7 @@ export type PageMetadataOptions = {
   publishedTime?: string;
   modifiedTime?: string;
   noIndex?: boolean;
+  image?: string;
 };
 
 export function buildPageMetadata({
@@ -46,10 +47,12 @@ export function buildPageMetadata({
   publishedTime,
   modifiedTime,
   noIndex = false,
+  image,
 }: PageMetadataOptions): Metadata {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const canonical = normalizedPath;
   const fullTitle = title.includes(brandName) ? title : `${title} | ${brandName}`;
+  const ogImage = image ?? "/opengraph-image";
 
   const openGraph = {
     title: fullTitle,
@@ -57,6 +60,7 @@ export function buildPageMetadata({
     type,
     url: canonical,
     siteName: brandName,
+    images: [{ url: ogImage }],
     ...(type === "article" && publishedTime
       ? {
           publishedTime,
@@ -76,6 +80,7 @@ export function buildPageMetadata({
       card: "summary_large_image",
       title: fullTitle,
       description,
+      images: [ogImage],
     },
     robots: {
       index: !noIndex,

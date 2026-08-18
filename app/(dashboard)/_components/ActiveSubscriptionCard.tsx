@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useState } from "react";
-import { LIFETIME_LOCK_OFFER, PRICING_TIERS } from "../../lib/pricing";
+import { PRICING_TIERS } from "../../lib/pricing";
 import {
   resolveSubscriptionScreen,
   type SubscriptionInfo,
@@ -191,9 +191,7 @@ function TrialSubscriptionCard({
   isPremium: boolean;
 }) {
   const plan = subscription.plan!;
-  const highlightFeatures =
-    tier.features.filter((f) => f.included && f.highlight).slice(0, 3) ??
-    tier.features.filter((f) => f.included).slice(0, 3);
+  const highlightFeatures = tier.features.filter((f) => f.included).slice(0, 3);
 
   return (
     <>
@@ -291,9 +289,7 @@ function PaidSubscriptionCard({
   onExtend?: () => void;
 }) {
   const plan = subscription.plan!;
-  const highlightFeatures =
-    tier.features.filter((f) => f.included && f.highlight).slice(0, 3) ??
-    tier.features.filter((f) => f.included).slice(0, 3);
+  const highlightFeatures = tier.features.filter((f) => f.included).slice(0, 3);
 
   return (
     <>
@@ -350,12 +346,9 @@ function PaidSubscriptionCard({
             ${tier.price}
           </span>
           <span className="text-sm text-zinc-500">/ {tier.periodLabel}</span>
-          <span className="text-sm text-zinc-600 line-through tabular-nums">
-            ${tier.originalPrice}
-          </span>
           {isPremium && (
             <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300/90">
-              {LIFETIME_LOCK_OFFER.cardBadge}
+              Premium
             </span>
           )}
         </div>

@@ -14,8 +14,17 @@ export function Footer({ siteConfig }: FooterProps) {
       <div className="mx-auto max-w-6xl min-w-0">
         <div className="grid gap-8 grid-cols-2 sm:grid-cols-2 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-1">
-            <Link href="/" className="text-base font-bold text-white sm:text-lg inline-block py-1">
-              {brandName}
+            <Link
+              href="/"
+              className="inline-flex items-center py-1 transition-opacity hover:opacity-90"
+              aria-label={`${brandName} home`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/pip-logo1.png"
+                alt={brandName}
+                className="h-10 w-auto max-w-[160px] object-contain sm:h-11"
+              />
             </Link>
           </div>
           <div>
