@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { SiteConfig } from "../lib/types";
+import { APP_BUILD_LABEL } from "../lib/version";
 
 type FooterProps = {
   siteConfig: SiteConfig;
@@ -86,6 +87,9 @@ export function Footer({ siteConfig }: FooterProps) {
         </div>
         <p className="mt-8 max-w-3xl text-xs text-zinc-500 sm:mt-12">
           {siteConfig.risk_disclaimer}
+        </p>
+        <p className="mt-4 text-[10px] text-zinc-600" aria-label="App version">
+          v{APP_BUILD_LABEL}
         </p>
       </div>
     </footer>

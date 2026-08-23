@@ -1,21 +1,13 @@
+export const API_BASE_URL = "https://api.pipsangel.com";
+
 export function getApiBase(): string {
-  const configured = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "");
-  if (configured) return configured;
-
-  if (typeof window !== "undefined") return "";
-
-  const site =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-  return site.replace(/\/$/, "");
+  return API_BASE_URL;
 }
 
 export function buildApiUrl(path: string): string {
-  const base = getApiBase();
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const withoutTrailing = normalized.replace(/\/$/, "") || normalized;
-  if (!base) return `/api/v1${withoutTrailing}`;
-  return `${base}/api/v1${withoutTrailing}`;
+  return `${API_BASE_URL}/api/v1${withoutTrailing}`;
 }
 
 function buildUrl(path: string): string {

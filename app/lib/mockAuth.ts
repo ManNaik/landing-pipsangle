@@ -173,5 +173,5 @@ export function mockUserFromToken(token: string): AuthUser | null {
 }
 
 export function isMockAuthEnabled(): boolean {
-  return !process.env.NEXT_PUBLIC_BACKEND_URL;
+  return false;
 }
