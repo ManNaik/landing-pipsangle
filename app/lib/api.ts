@@ -5,9 +5,11 @@ export function getApiBase(): string {
 }
 
 export function buildApiUrl(path: string): string {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  const withoutTrailing = normalized.replace(/\/$/, "") || normalized;
-  return `${API_BASE_URL}/api/v1${withoutTrailing}`;
+  const [pathname, query = ""] = path.split("?");
+  const normalized = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  const withSlash = normalized.endsWith("/") ? normalized : `${normalized}/`;
+  const url = `${API_BASE_URL}/api/v1${withSlash}`;
+  return query ? `${url}?${query}` : url;
 }
 
 function buildUrl(path: string): string {

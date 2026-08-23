@@ -1,5 +1,5 @@
 import type { AuthUser, LoginResponse } from "./types";
-import { apiPost, getApiBase } from "./api";
+import { apiPost, buildApiUrl } from "./api";
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
@@ -42,8 +42,7 @@ export function isStaffUser(user: AuthUser): boolean {
 }
 
 export async function fetchCurrentUser(token: string): Promise<AuthUser> {
-  const base = getApiBase().replace(/\/$/, "");
-  const res = await fetch(`${base}/api/v1/auth/me`, {
+  const res = await fetch(buildApiUrl("/auth/me/"), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {

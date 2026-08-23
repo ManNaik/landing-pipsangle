@@ -2,9 +2,12 @@ import { getAccessToken, clearTokens } from "./auth";
 import { getApiBase } from "./api";
 
 function buildAdminUrl(path: string): string {
+  const [pathname, query = ""] = path.split("?");
+  const normalized = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  const withSlash = normalized.endsWith("/") ? normalized : `${normalized}/`;
   const base = getApiBase().replace(/\/$/, "");
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `${base}/api/v1/admin${normalized}`;
+  const url = `${base}/api/v1/admin${withSlash}`;
+  return query ? `${url}?${query}` : url;
 }
 
 async function handleUnauthorized(): Promise<never> {
