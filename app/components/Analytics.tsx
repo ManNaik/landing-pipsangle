@@ -1,16 +1,12 @@
 import Script from "next/script";
 
-type AnalyticsProps = {
-  gaId?: string;
-};
+const GA_MEASUREMENT_ID = "G-2X3VTFF543";
 
-export function Analytics({ gaId }: AnalyticsProps) {
-  if (!gaId) return null;
-
+export function Analytics() {
   return (
     <>
       <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
         strategy="afterInteractive"
       />
       <Script id="ga4-init" strategy="afterInteractive">
@@ -18,7 +14,7 @@ export function Analytics({ gaId }: AnalyticsProps) {
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', '${gaId}');
+          gtag('config', '${GA_MEASUREMENT_ID}');
         `}
       </Script>
     </>
