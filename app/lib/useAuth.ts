@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  clearTokens,
+  clearLegacyTokenStorage,
   fetchCurrentUser,
-  getAccessToken,
   logout as authLogout,
   onAuthChange,
 } from "./auth";
@@ -15,18 +14,11 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const token = getAccessToken();
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
+    clearLegacyTokenStorage();
     try {
-      const current = await fetchCurrentUser(token);
+      const current = await fetchCurrentUser();
       setUser(current);
     } catch {
-      clearTokens();
       setUser(null);
     } finally {
       setLoading(false);
@@ -40,8 +32,8 @@ export function useAuth() {
     });
   }, [refresh]);
 
-  const logout = useCallback(() => {
-    authLogout();
+  const logout = useCallback(async () => {
+    await authLogout();
     setUser(null);
   }, []);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import {
   addClaimedReward,
   deductPipCoins,
@@ -13,10 +13,27 @@ import {
   getEffectiveSubscriptionEnd,
   getExtensionRewards,
   saveSubscriptionEndOverride,
+  SUBSCRIPTION_EXTENSION_STORAGE_KEY,
 } from "../../../lib/storeData";
 import type { SubscriptionInfo } from "../../../lib/subscriptionData";
 import type { AuthUser } from "../../../lib/types";
 import { ScreenBackButton } from "./SubscriptionShared";
+
+function subscribeSubscriptionEnd() {
+  return () => {};
+}
+
+let extensionEndCache: { user: AuthUser; storage: string; value: string } | null = null;
+
+function readExtensionEndSnapshot(user: AuthUser): string {
+  const storage = localStorage.getItem(SUBSCRIPTION_EXTENSION_STORAGE_KEY) ?? "";
+  if (extensionEndCache?.user === user && extensionEndCache.storage === storage) {
+    return extensionEndCache.value;
+  }
+  const value = getEffectiveSubscriptionEnd(user);
+  extensionEndCache = { user, storage, value };
+  return value;
+}
 
 type SubscriptionExtendScreenProps = {
   user: AuthUser;
@@ -31,16 +48,19 @@ export function SubscriptionExtendScreen({
   onExtended,
   onBack,
 }: SubscriptionExtendScreenProps) {
-  const [balance, setBalance] = useState(0);
+  const balance = useSyncExternalStore(
+    subscribeSubscriptionEnd,
+    loadPipCoinsBalance,
+    () => 0
+  );
+  const currentEnd = useSyncExternalStore(
+    subscribeSubscriptionEnd,
+    () => readExtensionEndSnapshot(user),
+    () => ""
+  );
   const [claiming, setClaiming] = useState<string | null>(null);
-  const [currentEnd, setCurrentEnd] = useState("");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const extensions = getExtensionRewards();
-
-  useEffect(() => {
-    setBalance(loadPipCoinsBalance());
-    setCurrentEnd(getEffectiveSubscriptionEnd(user));
-  }, [user]);
 
   const handleExtend = useCallback(
     async (rewardId: string, days: number, cost: number, name: string) => {
@@ -53,7 +73,7 @@ export function SubscriptionExtendScreen({
 
       const newEnd = extendSubscriptionEnd(currentEnd, days);
       saveSubscriptionEndOverride(newEnd);
-      const newBalance = deductPipCoins(cost);
+      deductPipCoins(cost);
       addClaimedReward({
         id: `claim-${Date.now()}`,
         rewardId,
@@ -64,8 +84,6 @@ export function SubscriptionExtendScreen({
         extensionDays: days,
       });
 
-      setBalance(newBalance);
-      setCurrentEnd(newEnd);
       setSuccessMessage(`Extended by ${days} days. New end date: ${formatStoreDate(newEnd)}.`);
       setClaiming(null);
       onExtended();

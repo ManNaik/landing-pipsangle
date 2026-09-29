@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getCapitalAllocation, getDashboardStats } from "../../lib/dashboardData";
 import { getSignupUrl } from "../../lib/pricing";
 import {
@@ -503,12 +503,16 @@ export function TradingSettings() {
     : planLimits;
   const stats = user ? getDashboardStats(user) : null;
 
-  const settings: TradingSettings | null = apiSettings
-    ? {
-        capitalUtilization: apiSettings.capitalUtilization,
-        autoTradeEnabled: apiSettings.autoTradeEnabled,
-      }
-    : null;
+  const settings = useMemo<TradingSettings | null>(
+    () =>
+      apiSettings
+        ? {
+            capitalUtilization: apiSettings.capitalUtilization,
+            autoTradeEnabled: apiSettings.autoTradeEnabled,
+          }
+        : null,
+    [apiSettings]
+  );
 
   const updateSettings = useCallback(
     (patch: Partial<TradingSettings>) => {

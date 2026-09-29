@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { clearTokens } from "../../../lib/auth";
+import { logout } from "../../../lib/auth";
 
 const NAV_ITEMS = [
   { href: "/managementadmin", label: "Dashboard", exact: true },
@@ -25,8 +25,9 @@ export function AdminSidebar({ email }: { email: string }) {
   const pathname = usePathname();
 
   function handleLogout() {
-    clearTokens();
-    window.location.href = "/managementadmin/login";
+    void logout().finally(() => {
+      window.location.href = "/managementadmin/login";
+    });
   }
 
   return (

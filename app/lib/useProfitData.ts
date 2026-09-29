@@ -42,7 +42,7 @@ export function useProfitData(
     } finally {
       setLoading(false);
     }
-  }, [period, custom?.from, custom?.to]);
+  }, [period, custom]);
 
   useEffect(() => {
     void refresh();

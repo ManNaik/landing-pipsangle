@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { fetchCurrentUser, getAccessToken } from "../../lib/auth";
+import { fetchCurrentUser } from "../../lib/auth";
 import type { AuthUser } from "../../lib/types";
 import { AdminSidebar } from "./_components/AdminSidebar";
 
@@ -18,19 +18,12 @@ export default function ManagementAdminLayout({
   const [loading, setLoading] = useState(!isLoginPage);
 
   useEffect(() => {
-    if (isLoginPage) {
-      setLoading(false);
-      return;
-    }
+    if (isLoginPage) return;
 
-    const token = getAccessToken();
-    if (!token) {
-      router.replace("/managementadmin/login");
-      return;
-    }
-
-    fetchCurrentUser(token)
+    let active = true;
+    fetchCurrentUser()
       .then((u) => {
+        if (!active) return;
         if (!u.is_staff) {
           router.replace("/managementadmin/login");
           return;
@@ -39,8 +32,12 @@ export default function ManagementAdminLayout({
         setLoading(false);
       })
       .catch(() => {
-        router.replace("/managementadmin/login");
+        if (active) router.replace("/managementadmin/login");
       });
+
+    return () => {
+      active = false;
+    };
   }, [isLoginPage, router]);
 
   if (isLoginPage) {

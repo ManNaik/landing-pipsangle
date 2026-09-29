@@ -2,15 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { getAccountMetrics, getDashboardStats } from "../../lib/dashboardData";
-import { mockExecutedTrades, mockSignals, isMockApiEnabled } from "../../lib/mockData";
+import { mockExecutedTrades, isMockApiEnabled } from "../../lib/mockData";
 import { type ProfitPeriod } from "../../lib/profitData";
 import { shouldShowWarningBanner } from "../../lib/brokerConnection";
+import {
+  getTrialCountdown,
+  isOnboardingInProgress,
+  shouldShowPaymentCta,
+} from "../../lib/onboardingStatus";
+import { fetchLiveSignals } from "../../lib/signalsApi";
 import { useAuth } from "../../lib/useAuth";
 import { useSubscriptionInfo } from "../../lib/useSubscriptionInfo";
 import { useOpenTrades, useTradeStats } from "../../lib/useTrades";
 import { useProfitData } from "../../lib/useProfitData";
 import { fetchTrades } from "../../lib/tradesApi";
-import type { ExecutedTrade } from "../../lib/types";
+import type { ExecutedTrade, Signal } from "../../lib/types";
+import Link from "next/link";
 import { ActiveSubscriptionCard } from "./ActiveSubscriptionCard";
 import { BrokerWarningBanner } from "./BrokerWarningBanner";
 import { useBrokerConnectionContext } from "./BrokerConnectionContext";
@@ -52,9 +59,9 @@ function ConnectedSuccessBanner({ onDismiss }: { onDismiss: () => void }) {
           </svg>
         </span>
         <div>
-          <p className="text-sm font-medium text-emerald-100">Broker verification completed</p>
+          <p className="text-sm font-medium text-emerald-100">Account verified</p>
           <p className="mt-0.5 text-sm text-emerald-200/70">
-            Your account is connected and ready for automated trading.
+            Your MT5 account is connected. Trial or subscription access is now active.
           </p>
         </div>
       </div>
@@ -116,6 +123,7 @@ export function DashboardContent() {
   const { user } = useAuth();
   const {
     status: brokerStatus,
+    connection,
     openOnboarding,
     showConnectedMessage,
     dismissConnectedMessage,
@@ -123,7 +131,10 @@ export function DashboardContent() {
   const [period, setPeriod] = useState<ProfitPeriod>("7d");
   const [customDates, setCustomDates] = useState(defaultCustomDates);
   const [feedTab, setFeedTab] = useState<FeedTab>("live");
-  const [dashboardTrades, setDashboardTrades] = useState<ExecutedTrade[]>([]);
+  const [dashboardTrades, setDashboardTrades] = useState<ExecutedTrade[]>(() =>
+    isMockApiEnabled() ? mockExecutedTrades : []
+  );
+  const [liveSignals, setLiveSignals] = useState<Signal[]>([]);
 
   const { trades: openTrades } = useOpenTrades();
   const { stats: tradeStats } = useTradeStats();
@@ -134,10 +145,7 @@ export function DashboardContent() {
   const { subscription, refresh: refreshSubscription } = useSubscriptionInfo(user);
 
   useEffect(() => {
-    if (isMockApiEnabled()) {
-      setDashboardTrades(mockExecutedTrades);
-      return;
-    }
+    if (isMockApiEnabled()) return;
 
     let cancelled = false;
     async function load() {
@@ -153,6 +161,26 @@ export function DashboardContent() {
       cancelled = true;
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSignals() {
+      try {
+        const signals = await fetchLiveSignals(20);
+        if (!cancelled) setLiveSignals(signals);
+      } catch {
+        if (!cancelled) setLiveSignals([]);
+      }
+    }
+    void loadSignals();
+    const poll = window.setInterval(() => {
+      void loadSignals();
+    }, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
+  }, []);
 
   const stats = user ? getDashboardStats(user) : null;
   const metrics = user
@@ -176,6 +204,45 @@ export function DashboardContent() {
 
         {shouldShowWarningBanner(brokerStatus) && (
           <BrokerWarningBanner onConnect={openOnboarding} />
+        )}
+
+        {isOnboardingInProgress(brokerStatus) && (
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5 sm:flex sm:items-center sm:justify-between sm:px-5">
+            <div>
+              <p className="text-sm font-medium text-amber-100">Onboarding in progress</p>
+              <p className="mt-0.5 text-sm text-zinc-400">
+                We&apos;re provisioning and verifying your MT5 account.
+                {connection.error ? ` ${connection.error}` : ""}
+              </p>
+            </div>
+            <Link
+              href="/onboarding"
+              className="mt-3 inline-flex rounded-lg border border-amber-500/30 px-4 py-2 text-sm text-amber-100 transition hover:bg-amber-500/10 sm:mt-0"
+            >
+              View checklist
+            </Link>
+          </div>
+        )}
+
+        {shouldShowPaymentCta(brokerStatus) && (
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3.5 sm:flex sm:items-center sm:justify-between sm:px-5">
+            <div>
+              <p className="text-sm font-medium text-emerald-100">
+                {brokerStatus === "trial_expired" ? "Trial ended" : "Trial active"}
+              </p>
+              <p className="mt-0.5 text-sm text-zinc-400">
+                {brokerStatus === "trial_expired"
+                  ? "Subscribe to keep copy trading enabled."
+                  : `Time left: ${getTrialCountdown(connection.trialEndsAt).label}`}
+              </p>
+            </div>
+            <Link
+              href="/subscription"
+              className="mt-3 inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-600 sm:mt-0"
+            >
+              {brokerStatus === "trial_expired" ? "Subscribe" : "Payment options"}
+            </Link>
+          </div>
         )}
 
         <HeroMetrics metrics={metrics} />
@@ -259,7 +326,7 @@ export function DashboardContent() {
 
           <div className="mt-3 hidden gap-4 lg:grid lg:grid-cols-2">
             <div className="min-w-0 rounded-2xl border border-blue-500/10 bg-blue-500/[0.04] p-4">
-              <SignalsList signals={mockSignals} variant="embedded" />
+              <SignalsList signals={liveSignals} variant="embedded" />
             </div>
             <div className="min-w-0 rounded-2xl border border-zinc-800/80 bg-zinc-900/30 p-4">
               <ExecutedTradesList trades={dashboardTrades} variant="embedded" />
@@ -273,7 +340,7 @@ export function DashboardContent() {
               </div>
             ) : (
               <div className="rounded-2xl border border-blue-500/10 bg-blue-500/[0.04] p-4">
-                <SignalsList signals={mockSignals} variant="embedded" />
+                <SignalsList signals={liveSignals} variant="embedded" />
               </div>
             )}
           </div>

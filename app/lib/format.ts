@@ -25,7 +25,7 @@ export function formatSignalStatus(status: SignalStatus): string {
   return labels[status] ?? status.toUpperCase();
 }
 
-export function formatPipsResult(pips: number, result: string): string {
+export function formatPipsResult(pips: number): string {
   const sign = pips >= 0 ? "+" : "";
   return `${sign}${pips} pips`;
 }

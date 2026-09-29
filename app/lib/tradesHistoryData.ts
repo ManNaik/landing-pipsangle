@@ -17,21 +17,6 @@ type TradeSeed = {
   executed_at: string;
 };
 
-const PAIRS = [
-  "EUR/USD",
-  "GBP/JPY",
-  "USD/CAD",
-  "AUD/USD",
-  "XAU/USD",
-  "GBP/USD",
-  "USD/JPY",
-  "EUR/GBP",
-  "NZD/USD",
-  "EUR/JPY",
-  "USD/CHF",
-  "CAD/JPY",
-] as const;
-
 const SEEDS: TradeSeed[] = [
   {
     pair: "EUR/USD",

@@ -1,28 +1,25 @@
-import { getAccessToken, clearTokens } from "./auth";
-import { buildApiUrl } from "./api";
+import { expireSession } from "./auth";
+import { toSameOriginProxyPath } from "./authSession";
 
-async function handleUnauthorized(): Promise<never> {
-  clearTokens();
-  if (typeof window !== "undefined") {
-    window.location.href = "/dashboard";
-  }
-  throw new Error("Unauthorized");
+function proxyUrl(path: string): string {
+  return toSameOriginProxyPath("/api/proxy", path);
 }
 
-export async function userFetch<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = getAccessToken();
-  if (!token) {
-    return handleUnauthorized();
+async function handleUnauthorized(): Promise<never> {
+  expireSession();
+  if (typeof window !== "undefined") {
+    window.location.href = "/?login=1&next=/dashboard";
   }
+  throw new Error("Session expired. Please log in again.");
+}
 
-  const res = await fetch(buildApiUrl(path), {
+export async function userFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(proxyUrl(path), {
     ...options,
+    credentials: "same-origin",
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });
@@ -35,7 +32,7 @@ export async function userFetch<T>(
     return undefined as T;
   }
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = data as { detail?: string };
     throw new Error(err.detail ?? `API error: ${res.status}`);

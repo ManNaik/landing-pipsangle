@@ -19,12 +19,9 @@ export function FAQExplorer({ sections }: { sections: FaqSection[] }) {
 
   const visible = useMemo(() => filterFaqSections(sections, query), [sections, query]);
 
-  useEffect(() => {
-    if (visible.length === 0) return;
-    if (!visible.some((section) => section.id === active)) {
-      setActive(visible[0].id);
-    }
-  }, [visible, active]);
+  if (visible.length > 0 && !visible.some((section) => section.id === active)) {
+    setActive(visible[0].id);
+  }
 
   useEffect(() => {
     const nodes = visible

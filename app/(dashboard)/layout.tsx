@@ -3,12 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LoginModal } from "../components/LoginModal";
-import {
-  clearTokens,
-  fetchCurrentUser,
-  getAccessToken,
-  onAuthChange,
-} from "../lib/auth";
+import { fetchCurrentUser, onAuthChange } from "../lib/auth";
 import { defaultSiteConfig } from "../lib/defaultSiteConfig";
 import type { AuthUser } from "../lib/types";
 import { DashboardShell } from "./_components/DashboardShell";
@@ -25,20 +20,11 @@ export default function DashboardGroupLayout({
 
   useEffect(() => {
     async function loadUser() {
-      const token = getAccessToken();
-      if (!token) {
-        setUser(null);
-        setLoading(false);
-        setLoginOpen(true);
-        return;
-      }
-
       try {
-        const current = await fetchCurrentUser(token);
+        const current = await fetchCurrentUser();
         setUser(current);
         setLoginOpen(false);
       } catch {
-        clearTokens();
         setUser(null);
         setLoginOpen(true);
       } finally {

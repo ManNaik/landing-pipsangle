@@ -10,7 +10,6 @@ import {
   PERFORMANCE_PERIODS,
   type PerformancePeriod,
   type PerformanceReport,
-  type PerformanceSource,
 } from "../../lib/performanceReport";
 import { EquityChart } from "./EquityChart";
 
@@ -25,7 +24,6 @@ function money(value: number, unit: PerformanceReport["pnlUnit"]): string {
 export function PerformanceDashboard({ liveReport }: PerformanceDashboardProps) {
   const [period, setPeriod] = useState<PerformancePeriod>("30D");
   const [notice, setNotice] = useState(false);
-  const source: PerformanceSource = liveReport ? "live" : "demo";
 
   const report = useMemo(
     () => liveReport ?? getDemoReport(period),

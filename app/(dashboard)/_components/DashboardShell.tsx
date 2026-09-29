@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { usePathname } from "next/navigation";
 import type { AuthUser } from "../../lib/types";
 import { useBrokerConnection } from "../../lib/useBrokerConnection";
 import { BrokerConnectionProvider } from "./BrokerConnectionContext";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardTopbar } from "./DashboardTopbar";
-import { OnboardingModal } from "./OnboardingModal";
+import { useState } from "react";
 
 type DashboardShellProps = {
   user: AuthUser;
@@ -16,13 +16,26 @@ type DashboardShellProps = {
 
 export function DashboardShell({ user, brandName, children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const broker = useBrokerConnection({ userId: user.id, userEmail: user.email });
+  const pathname = usePathname();
+  const onOnboardingRoute = pathname?.startsWith("/onboarding") ?? false;
+  const broker = useBrokerConnection({
+    userId: user.id,
+    userEmail: user.email,
+    autoRedirect: !onOnboardingRoute,
+  });
 
   return (
     <BrokerConnectionProvider
       value={{
+        connection: broker.connection,
         status: broker.status,
+        loading: broker.loading,
+        submitting: broker.submitting,
+        error: broker.error,
         openOnboarding: broker.openOnboarding,
+        handleSkip: broker.handleSkip,
+        handleSubmit: broker.handleSubmit,
+        refresh: broker.refresh,
         showConnectedMessage: broker.showConnectedMessage,
         dismissConnectedMessage: broker.dismissConnectedMessage,
       }}
@@ -49,15 +62,6 @@ export function DashboardShell({ user, brandName, children }: DashboardShellProp
           </main>
         </div>
       </div>
-
-      <OnboardingModal
-        open={broker.onboardingOpen}
-        status={broker.status}
-        onSkip={broker.handleSkip}
-        onClose={broker.closeOnboarding}
-        onSubmit={broker.handleSubmit}
-        onCompleteVerification={broker.handleCompleteVerification}
-      />
     </BrokerConnectionProvider>
   );
 }

@@ -2,10 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { apiPost } from "../lib/api";
-import { notifyAuthChange, setTokens } from "../lib/auth";
+import { signup } from "../lib/auth";
 import { FREE_TRIAL_CTA, FREE_TRIAL_DAYS } from "../lib/trial";
-import type { LoginResponse } from "../lib/types";
 
 export function SignupForm() {
   const searchParams = useSearchParams();
@@ -26,13 +24,7 @@ export function SignupForm() {
     const plan = (formData.get("plan_slug") as string) || planSlug || "basic";
 
     try {
-      const result = await apiPost<LoginResponse>("/auth/signup/", {
-        email,
-        password,
-        plan_slug: plan,
-      });
-      setTokens(result.access_token, result.refresh_token);
-      notifyAuthChange();
+      await signup(email, password, plan);
       router.push("/subscription");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");

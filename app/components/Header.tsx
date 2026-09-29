@@ -2,16 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { isRetiredNavItem } from "../lib/defaultSiteConfig";
 import type { SiteConfig } from "../lib/types";
 import { logout } from "../lib/auth";
+import { safeInternalPath } from "../lib/authSession";
 import { useAuth } from "../lib/useAuth";
 import { LoginModal } from "./LoginModal";
 
 type HeaderProps = {
   siteConfig: SiteConfig;
 };
+
+type LoginQuerySnapshot = {
+  search: string;
+  next: string | null;
+};
+
+const SERVER_LOGIN_QUERY: LoginQuerySnapshot = { search: "", next: null };
+
+function subscribeLoginQuery() {
+  return () => {};
+}
+
+function getServerLoginQuerySnapshot(): LoginQuerySnapshot {
+  return SERVER_LOGIN_QUERY;
+}
+
+let loginQueryCache: LoginQuerySnapshot | null = null;
+
+function readLoginQuerySnapshot(): LoginQuerySnapshot {
+  const search = window.location.search;
+  if (loginQueryCache?.search === search) return loginQueryCache;
+  const params = new URLSearchParams(search);
+  const next =
+    params.get("login") === "1"
+      ? (safeInternalPath(params.get("next")) ?? "/dashboard")
+      : null;
+  loginQueryCache = { search, next };
+  return loginQueryCache;
+}
 
 export function Header({ siteConfig }: HeaderProps) {
   // Defense-in-depth: never render retired Signals nav even if CMS/cache still sends it.
@@ -23,6 +53,21 @@ export function Header({ siteConfig }: HeaderProps) {
   const { user, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [loginNext, setLoginNext] = useState("/dashboard");
+  const [handledLoginPath, setHandledLoginPath] = useState<string | null>(null);
+  const loginQuery = useSyncExternalStore(
+    subscribeLoginQuery,
+    readLoginQuerySnapshot,
+    getServerLoginQuerySnapshot
+  );
+
+  if (loginQuery !== SERVER_LOGIN_QUERY && handledLoginPath !== pathname) {
+    setHandledLoginPath(pathname);
+    if (loginQuery.next) {
+      setLoginNext(loginQuery.next);
+      setLoginOpen(true);
+    }
+  }
 
   useEffect(() => {
     if (menuOpen) {
@@ -98,7 +143,9 @@ export function Header({ siteConfig }: HeaderProps) {
               </Link>
               <button
                 type="button"
-                onClick={() => logout()}
+                onClick={() => {
+                  void logout();
+                }}
                 className="hidden items-center rounded-lg border border-zinc-700/80 bg-zinc-900/50 px-3.5 py-2 text-[13px] font-medium tracking-wide text-zinc-300 transition-all duration-200 hover:border-zinc-600 hover:bg-zinc-800 hover:text-white lg:inline-flex"
               >
                 Log out
@@ -195,7 +242,7 @@ export function Header({ siteConfig }: HeaderProps) {
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    logout();
+                    void logout();
                   }}
                   className="block w-full rounded-lg border border-zinc-700/80 bg-zinc-900/40 px-4 py-3 text-center text-base font-medium text-zinc-300 transition-all duration-200 hover:border-zinc-600 hover:bg-zinc-800/60 hover:text-white"
                 >
@@ -218,7 +265,11 @@ export function Header({ siteConfig }: HeaderProps) {
         </ul>
       </div>
 
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      <LoginModal
+        open={loginOpen}
+        redirectTo={loginNext}
+        onClose={() => setLoginOpen(false)}
+      />
     </header>
   );
 }

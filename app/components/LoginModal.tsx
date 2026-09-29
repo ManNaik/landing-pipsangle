@@ -5,20 +5,28 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { userLogin } from "../lib/auth";
-import { DEMO_CREDENTIALS } from "../lib/demoCredentials";
+import { safeInternalPath } from "../lib/authSession";
+import { getDemoCredentials } from "../lib/demoCredentials";
 
 type LoginModalProps = {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  redirectTo?: string;
 };
 
-export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
+export function LoginModal({
+  open,
+  onClose,
+  onSuccess,
+  redirectTo = "/dashboard",
+}: LoginModalProps) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const demo = getDemoCredentials();
 
   useEffect(() => {
     setMounted(true);
@@ -58,7 +66,7 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
       onClose();
       form.reset();
       onSuccess?.();
-      router.push("/dashboard");
+      router.push(safeInternalPath(redirectTo) ?? "/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -143,12 +151,21 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
           </div>
 
           <div>
-            <label
-              htmlFor="login-password"
-              className="block text-sm font-medium text-zinc-300"
-            >
-              Password
-            </label>
+            <div className="flex items-center justify-between gap-3">
+              <label
+                htmlFor="login-password"
+                className="block text-sm font-medium text-zinc-300"
+              >
+                Password
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-emerald-400 transition hover:text-emerald-300"
+                onClick={onClose}
+              >
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="login-password"
               type="password"
@@ -180,9 +197,11 @@ export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
           </Link>
         </p>
 
-        <p className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 text-center text-xs text-zinc-500">
-          Demo: {DEMO_CREDENTIALS.user.email} / {DEMO_CREDENTIALS.user.password}
-        </p>
+        {demo && (
+          <p className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 text-center text-xs text-zinc-500">
+            Dev demo: {demo.user.email} / {demo.user.password}
+          </p>
+        )}
       </div>
     </div>,
     document.body

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { formatDateTime } from "../../lib/format";
 import {
   addClaimedReward,
+  CLAIM_HISTORY_STORAGE_KEY,
   deductPipCoins,
   loadClaimHistory,
   loadPipCoinsBalance,
@@ -17,10 +18,12 @@ import {
   getEffectiveSubscriptionEnd,
   getExtensionRewards,
   saveSubscriptionEndOverride,
+  SUBSCRIPTION_EXTENSION_STORAGE_KEY,
   type StoreReward,
 } from "../../lib/storeData";
 import { DEMO_REFERRAL_PROGRAM } from "../../lib/referralData";
 import { getTrialEndIso, isOnTrial } from "../../lib/subscriptionData";
+import type { AuthUser } from "../../lib/types";
 import { useAuth } from "../../lib/useAuth";
 import { ReferralCard } from "./ReferralCard";
 
@@ -328,25 +331,52 @@ function ClaimHistoryItem({ entry }: { entry: ClaimedReward }) {
   );
 }
 
+const EMPTY_CLAIM_HISTORY: ClaimedReward[] = [];
+
+function subscribePipStore() {
+  return () => {};
+}
+
+let claimHistoryCache: { storage: string; value: ClaimedReward[] } | null = null;
+
+function readClaimHistorySnapshot(): ClaimedReward[] {
+  const storage = localStorage.getItem(CLAIM_HISTORY_STORAGE_KEY) ?? "";
+  if (claimHistoryCache?.storage === storage) return claimHistoryCache.value;
+  const value = loadClaimHistory();
+  claimHistoryCache = { storage, value };
+  return value;
+}
+
+let renewalCache: { user: AuthUser; storage: string; value: string } | null = null;
+
+function readRenewalEndSnapshot(user: AuthUser | null): string | null {
+  if (!user) return null;
+  const storage = localStorage.getItem(SUBSCRIPTION_EXTENSION_STORAGE_KEY) ?? "";
+  if (renewalCache?.user === user && renewalCache.storage === storage) {
+    return renewalCache.value;
+  }
+  const end = isOnTrial(user) ? getTrialEndIso(user) : getEffectiveSubscriptionEnd(user);
+  renewalCache = { user, storage, value: end };
+  return end;
+}
+
 export function PipCoinStore() {
   const { user } = useAuth();
-  const [balance, setBalance] = useState(0);
-  const [history, setHistory] = useState<ClaimedReward[]>([]);
+  const balance = useSyncExternalStore(subscribePipStore, loadPipCoinsBalance, () => 0);
+  const history = useSyncExternalStore(
+    subscribePipStore,
+    readClaimHistorySnapshot,
+    () => EMPTY_CLAIM_HISTORY
+  );
+  const renewalEnd = useSyncExternalStore(
+    subscribePipStore,
+    () => readRenewalEndSnapshot(user),
+    () => null
+  );
+  const remainingDays = renewalEnd ? daysUntilDate(renewalEnd) : 0;
   const [claiming, setClaiming] = useState<string | null>(null);
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
   const [couponApplied, setCouponApplied] = useState(false);
-  const [renewalEnd, setRenewalEnd] = useState<string | null>(null);
-  const [remainingDays, setRemainingDays] = useState(0);
-
-  useEffect(() => {
-    if (!user) return;
-    setBalance(loadPipCoinsBalance());
-    setHistory(loadClaimHistory());
-    const onTrial = isOnTrial(user);
-    const end = onTrial ? getTrialEndIso(user) : getEffectiveSubscriptionEnd(user);
-    setRenewalEnd(end);
-    setRemainingDays(daysUntilDate(end));
-  }, [user]);
 
   const handleClaim = useCallback(
     async (reward: StoreReward) => {
@@ -357,8 +387,7 @@ export function PipCoinStore() {
 
       await new Promise((resolve) => window.setTimeout(resolve, 400));
 
-      const newBalance = deductPipCoins(reward.cost);
-      setBalance(newBalance);
+      deductPipCoins(reward.cost);
 
       let result: ClaimResult = { reward };
 
@@ -377,8 +406,6 @@ export function PipCoinStore() {
         const currentEnd = getEffectiveSubscriptionEnd(user);
         const newEnd = extendSubscriptionEnd(currentEnd, reward.extensionDays);
         saveSubscriptionEndOverride(newEnd);
-        setRenewalEnd(newEnd);
-        setRemainingDays(daysUntilDate(newEnd));
         result = { reward, newEndDate: newEnd };
         addClaimedReward({
           id: `claim-${Date.now()}`,
@@ -391,7 +418,6 @@ export function PipCoinStore() {
         });
       }
 
-      setHistory(loadClaimHistory());
       setClaimResult(result);
       setClaiming(null);
     },

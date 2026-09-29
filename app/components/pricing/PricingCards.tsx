@@ -69,15 +69,17 @@ function PricingCard({ tier }: { tier: PricingTier }) {
   );
 }
 
-export function PricingCards() {
-  const basic = PRICING_TIERS.find((tier) => tier.id === "basic")!;
-  const premium = PRICING_TIERS.find((tier) => tier.id === "premium")!;
+export function PricingCards({ tiers = PRICING_TIERS }: { tiers?: PricingTier[] }) {
+  const basic = tiers.find((tier) => tier.id === "basic") ?? tiers[0];
+  const premium = tiers.find((tier) => tier.id === "premium") ?? tiers[1] ?? basic;
+
+  if (!basic) return null;
 
   return (
     <section className="px-4 py-14 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
       <div className="mx-auto grid max-w-5xl gap-5 lg:grid-cols-2 lg:items-stretch lg:gap-6">
         <PricingCard tier={basic} />
-        <PricingCard tier={premium} />
+        {premium && premium.id !== basic.id ? <PricingCard tier={premium} /> : null}
       </div>
       <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-zinc-500">
         Risk is managed, not eliminated. Trading involves market risk. Past

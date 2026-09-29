@@ -7,6 +7,7 @@ import { PricingFinalCta } from "../../components/pricing/PricingFinalCta";
 import { PricingHero } from "../../components/pricing/PricingHero";
 import { PricingTrial } from "../../components/pricing/PricingTrial";
 import { PricingTrust } from "../../components/pricing/PricingTrust";
+import { fetchPricingPlansFromApi, mergePricingTiers } from "../../lib/cmsApi";
 import { formatPrice, getSignupUrl, PRICING_TIERS } from "../../lib/pricing";
 import {
   buildBreadcrumbSchema,
@@ -38,8 +39,10 @@ export default async function PricingPage() {
   const siteConfig = await getSiteConfig();
   const siteUrl = resolveSiteUrl(siteConfig);
   const brandName = siteConfig?.brand_name ?? "PipAngel";
+  const apiPlans = await fetchPricingPlansFromApi();
+  const tiers = mergePricingTiers(apiPlans);
 
-  const productSchemas = PRICING_TIERS.map((tier) =>
+  const productSchemas = tiers.map((tier) =>
     buildProductOfferSchema(siteUrl, brandName, {
       name: `${tier.name} (${tier.periodLabel})`,
       description: tier.tagline,
@@ -61,7 +64,7 @@ export default async function PricingPage() {
         }}
       />
       <PricingHero />
-      <PricingCards />
+      <PricingCards tiers={tiers} />
       <PricingCompare />
       <PricingBenefits />
       <PricingTrial />

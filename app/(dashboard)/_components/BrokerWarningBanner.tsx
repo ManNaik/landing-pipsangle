@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
+
 type BrokerWarningBannerProps = {
-  onConnect: () => void;
+  onConnect?: () => void;
 };
 
 function WarningIcon({ className = "h-5 w-5" }: { className?: string }) {
@@ -28,21 +30,30 @@ export function BrokerWarningBanner({ onConnect }: BrokerWarningBannerProps) {
         </span>
         <div>
           <p className="text-sm font-medium text-amber-100">
-            You haven&apos;t connected to any broker
+            Finish connecting your broker
           </p>
           <p className="mt-0.5 text-sm text-zinc-400">
-            Connect your account to enable automated trading and live performance tracking.
+            Complete onboarding to enable automated trading and live performance tracking.
           </p>
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onConnect}
-        className="shrink-0 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-600 sm:ml-4"
-      >
-        Connect
-      </button>
+      {onConnect ? (
+        <button
+          type="button"
+          onClick={onConnect}
+          className="shrink-0 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-600 sm:ml-4"
+        >
+          Continue setup
+        </button>
+      ) : (
+        <Link
+          href="/onboarding"
+          className="shrink-0 rounded-lg bg-emerald-500 px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-emerald-600 sm:ml-4"
+        >
+          Continue setup
+        </Link>
+      )}
     </div>
   );
 }

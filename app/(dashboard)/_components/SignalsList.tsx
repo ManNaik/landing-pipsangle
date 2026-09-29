@@ -39,6 +39,11 @@ export function SignalsList({ signals, variant = "default" }: SignalsListProps) 
       </div>
 
       <div className="scrollbar-subtle min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+        {signals.length === 0 && (
+          <p className="rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-6 text-center text-sm text-zinc-500">
+            No live signals right now.
+          </p>
+        )}
         {signals.map((signal) => (
           <article
             key={signal.id}

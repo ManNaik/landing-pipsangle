@@ -1,37 +1,25 @@
-import { getAccessToken, clearTokens } from "./auth";
-import { getApiBase } from "./api";
+import { expireSession } from "./auth";
+import { toSameOriginProxyPath } from "./authSession";
 
-function buildAdminUrl(path: string): string {
-  const [pathname, query = ""] = path.split("?");
-  const normalized = pathname.startsWith("/") ? pathname : `/${pathname}`;
-  const withSlash = normalized.endsWith("/") ? normalized : `${normalized}/`;
-  const base = getApiBase().replace(/\/$/, "");
-  const url = `${base}/api/v1/admin${withSlash}`;
-  return query ? `${url}?${query}` : url;
+function buildAdminProxyUrl(path: string): string {
+  return toSameOriginProxyPath("/api/proxy/admin", path);
 }
 
 async function handleUnauthorized(): Promise<never> {
-  clearTokens();
+  expireSession();
   if (typeof window !== "undefined") {
     window.location.href = "/managementadmin/login";
   }
   throw new Error("Unauthorized");
 }
 
-async function adminFetch<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = getAccessToken();
-  if (!token) {
-    return handleUnauthorized();
-  }
-
-  const res = await fetch(buildAdminUrl(path), {
+async function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(buildAdminProxyUrl(path), {
     ...options,
+    credentials: "same-origin",
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });

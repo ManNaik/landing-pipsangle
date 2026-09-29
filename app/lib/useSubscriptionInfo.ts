@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchSubscriptionMe } from "./subscriptionApi";
 import { getSubscriptionInfo, type SubscriptionInfo } from "./subscriptionData";
 import {
@@ -13,7 +13,7 @@ import type { AuthUser } from "./types";
 import { onAuthChange } from "./auth";
 
 export function useSubscriptionInfo(user: AuthUser | null) {
-  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [liveSubscription, setLiveSubscription] = useState<SubscriptionInfo | null>(null);
   const [revision, setRevision] = useState(0);
 
   const refresh = useCallback(() => {
@@ -31,21 +31,18 @@ export function useSubscriptionInfo(user: AuthUser | null) {
     return () => window.removeEventListener("storage", onStorage);
   }, [refresh]);
 
-  useEffect(() => {
-    if (!user) {
-      setSubscription(null);
-      return;
-    }
+  const mockSubscription = useMemo(() => {
+    if (!user || !isMockApiEnabled()) return null;
+    // Stored overrides are external; `revision` is the signal to read them again.
+    void revision;
+    return getSubscriptionInfo(user, {
+      effectiveRenewalIso: getEffectiveSubscriptionEnd(user),
+      trialActiveOverride: loadTrialActiveOverride(user),
+    });
+  }, [user, revision]);
 
-    if (isMockApiEnabled()) {
-      setSubscription(
-        getSubscriptionInfo(user, {
-          effectiveRenewalIso: getEffectiveSubscriptionEnd(user),
-          trialActiveOverride: loadTrialActiveOverride(user),
-        })
-      );
-      return;
-    }
+  useEffect(() => {
+    if (!user || isMockApiEnabled()) return;
 
     const currentUser = user;
     let cancelled = false;
@@ -53,10 +50,10 @@ export function useSubscriptionInfo(user: AuthUser | null) {
     async function load() {
       try {
         const data = await fetchSubscriptionMe();
-        if (!cancelled) setSubscription(data);
+        if (!cancelled) setLiveSubscription(data);
       } catch {
         if (!cancelled) {
-          setSubscription(
+          setLiveSubscription(
             getSubscriptionInfo(currentUser, {
               effectiveRenewalIso: getEffectiveSubscriptionEnd(currentUser),
               trialActiveOverride: loadTrialActiveOverride(currentUser),
@@ -75,6 +72,12 @@ export function useSubscriptionInfo(user: AuthUser | null) {
   useEffect(() => {
     return onAuthChange(refresh);
   }, [refresh]);
+
+  const subscription = !user
+    ? null
+    : isMockApiEnabled()
+      ? mockSubscription
+      : liveSubscription;
 
   return { subscription, refresh };
 }

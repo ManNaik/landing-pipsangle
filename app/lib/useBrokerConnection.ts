@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   fetchBrokerConnection,
   skipBrokerConnectionApi,
   submitBrokerConnectionApi,
+  updateBrokerCredentialsApi,
 } from "./brokerApi";
 import {
   completeBrokerVerification,
-  DEMO_AUTO_VERIFY_MS,
   getBrokerConnection,
   markConnectedMessageShown,
   onBrokerConnectionChange,
@@ -19,18 +20,33 @@ import {
   type BrokerConnectionData,
   type BrokerConnectionStatus,
 } from "./brokerConnection";
-import { isMockApiEnabled } from "./mockData";
+import { isDevDemoEnabled, isMockApiEnabled } from "./env";
+import {
+  isOnboardingReady,
+  shouldPollOnboarding,
+} from "./onboardingStatus";
 
 type UseBrokerConnectionOptions = {
   userId: string;
   userEmail?: string;
+  /** When true, incomplete onboarding redirects to /onboarding */
+  autoRedirect?: boolean;
 };
 
-export function useBrokerConnection({ userId, userEmail }: UseBrokerConnectionOptions) {
+const POLL_INTERVAL_MS = 5000;
+
+export function useBrokerConnection({
+  userId,
+  autoRedirect = true,
+}: UseBrokerConnectionOptions) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [connection, setConnection] = useState<BrokerConnectionData>(() =>
     isMockApiEnabled() ? getBrokerConnection(userId) : { status: "none" }
   );
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [loading, setLoading] = useState(!isMockApiEnabled());
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showConnectedMessage, setShowConnectedMessage] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -38,121 +54,128 @@ export function useBrokerConnection({ userId, userEmail }: UseBrokerConnectionOp
       const next = getBrokerConnection(userId);
       setConnection(next);
       setShowConnectedMessage(shouldShowConnectedMessage(userId));
-      return;
+      setLoading(false);
+      return next;
     }
 
     try {
       const next = await fetchBrokerConnection();
       setConnection(next);
       setShowConnectedMessage(
-        next.status === "connected" && shouldShowConnectedMessage(userId)
+        isOnboardingReady(next.status) && shouldShowConnectedMessage(userId)
       );
-    } catch {
-      setConnection({ status: "none" });
+      setError(next.error ?? null);
+      return next;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load onboarding status");
+      return null;
+    } finally {
+      setLoading(false);
     }
   }, [userId]);
 
   useEffect(() => {
     void refresh();
-    return onBrokerConnectionChange(refresh);
+    return onBrokerConnectionChange(() => {
+      void refresh();
+    });
   }, [refresh]);
 
   useEffect(() => {
-    if (connection.status === "none") {
-      setOnboardingOpen(true);
-    }
-  }, [connection.status]);
+    // Only force first-time setup; skipped users may browse with a warning banner.
+    if (!autoRedirect || loading) return;
+    if (connection.status !== "none") return;
+    if (pathname?.startsWith("/onboarding")) return;
+    router.replace("/onboarding");
+  }, [autoRedirect, loading, connection.status, pathname, router]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("verify") === "1" && connection.status === "pending") {
-      if (isMockApiEnabled()) {
-        completeBrokerVerification(userId);
-      } else {
-        void refresh();
-      }
-    }
-  }, [connection.status, userId, refresh]);
-
-  useEffect(() => {
-    if (connection.status !== "pending") return;
-    if (isMockApiEnabled()) {
-      if (userEmail?.toLowerCase() !== "demo@pipangel.com") return;
-      const timer = window.setTimeout(() => {
-        completeBrokerVerification(userId);
-      }, DEMO_AUTO_VERIFY_MS);
-      return () => window.clearTimeout(timer);
-    }
-
+    if (!shouldPollOnboarding(connection.status)) return;
     const poll = window.setInterval(() => {
       void refresh();
-    }, 2000);
-    const timeout = window.setTimeout(() => {
-      window.clearInterval(poll);
-    }, DEMO_AUTO_VERIFY_MS + 4000);
-
-    return () => {
-      window.clearInterval(poll);
-      window.clearTimeout(timeout);
-    };
-  }, [connection.status, userEmail, userId, refresh]);
-
-  const openOnboarding = useCallback(() => {
-    setOnboardingOpen(true);
-  }, []);
-
-  const closeOnboarding = useCallback(() => {
-    setOnboardingOpen(false);
-  }, []);
+    }, POLL_INTERVAL_MS);
+    return () => window.clearInterval(poll);
+  }, [connection.status, refresh]);
 
   const handleSkip = useCallback(async () => {
-    if (isMockApiEnabled()) {
-      skipBrokerConnection(userId);
-    } else {
-      const next = await skipBrokerConnectionApi();
-      setConnection(next);
+    setError(null);
+    try {
+      if (isMockApiEnabled()) {
+        skipBrokerConnection(userId);
+        setConnection({ status: "skipped" });
+      } else {
+        const next = await skipBrokerConnectionApi();
+        setConnection(next);
+      }
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not skip onboarding");
     }
-    setOnboardingOpen(false);
-  }, [userId]);
+  }, [userId, router]);
 
   const handleSubmit = useCallback(
     async (payload: BrokerConnectPayload) => {
-      if (isMockApiEnabled()) {
-        submitBrokerConnection(userId, payload);
-      } else {
-        const next = await submitBrokerConnectionApi(payload);
+      setSubmitting(true);
+      setError(null);
+      try {
+        // Password is write-only: never store it outside this request stack frame.
+        const { mt5Password: _password, ...safeMeta } = payload;
+        void _password;
+
+        if (isMockApiEnabled()) {
+          submitBrokerConnection(userId, safeMeta);
+          const next = getBrokerConnection(userId);
+          setConnection(next);
+          if (isDevDemoEnabled()) {
+            // Explicit local mock advance only — never in production.
+            window.setTimeout(() => {
+              completeBrokerVerification(userId);
+            }, 1500);
+          }
+          return next;
+        }
+
+        const isUpdate =
+          connection.status !== "none" && connection.status !== "skipped";
+        const next = isUpdate
+          ? await updateBrokerCredentialsApi(payload)
+          : await submitBrokerConnectionApi(payload);
         setConnection(next);
+        return next;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Could not submit broker details";
+        setError(message);
+        throw err;
+      } finally {
+        setSubmitting(false);
       }
     },
-    [userId]
+    [userId, connection.status]
   );
-
-  const handleCompleteVerification = useCallback(() => {
-    if (isMockApiEnabled()) {
-      completeBrokerVerification(userId);
-    } else {
-      void refresh();
-    }
-    setOnboardingOpen(false);
-  }, [userId, refresh]);
 
   const dismissConnectedMessage = useCallback(() => {
     markConnectedMessageShown(userId);
     setShowConnectedMessage(false);
   }, [userId]);
 
+  const openOnboarding = useCallback(() => {
+    router.push("/onboarding");
+  }, [router]);
+
   const status: BrokerConnectionStatus = connection.status ?? "none";
 
   return {
     connection,
     status,
-    onboardingOpen,
+    loading,
+    submitting,
+    error,
+    setError,
     openOnboarding,
-    closeOnboarding,
     handleSkip,
     handleSubmit,
-    handleCompleteVerification,
+    refresh,
     showConnectedMessage,
     dismissConnectedMessage,
   };

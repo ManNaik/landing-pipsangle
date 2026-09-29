@@ -382,6 +382,51 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
+/** Sanitized broker onboarding payload returned by GET/POST /broker/connection/. */
+export type BrokerOnboardingStatus =
+  | "none"
+  | "skipped"
+  | "pending"
+  | "connected"
+  | "submitted"
+  | "provisioning"
+  | "operator_action"
+  | "verifying"
+  | "active_trial"
+  | "failed"
+  | "trial_expired"
+  | "paid"
+  | "disabled";
+
+export interface BrokerOnboardingResponse {
+  status: BrokerOnboardingStatus | string;
+  id?: string;
+  broker_id?: string;
+  broker_name?: string;
+  mt5_login?: string;
+  mt5_server?: string;
+  account_id?: string;
+  submitted_at?: string;
+  verified_at?: string;
+  trial_starts_at?: string | null;
+  trial_ends_at?: string | null;
+  error?: string | null;
+  error_code?: string | null;
+  account_key?: string | null;
+  worker_id?: string | null;
+  risk_acknowledged?: boolean;
+}
+
+/** Write-only connect body — mt5_password must never be echoed or stored client-side. */
+export interface BrokerConnectRequest {
+  broker_id: string;
+  broker_name: string;
+  mt5_login: string;
+  mt5_server: string;
+  mt5_password: string;
+  risk_acknowledged: boolean;
+}
+
 export interface ApiError {
   detail: string;
   errors?: Record<string, string[]>;

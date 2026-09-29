@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { logout } from "../../lib/auth";
 import type { BrokerConnectionStatus } from "../../lib/brokerConnection";
+import { formatBrokerStatusLabel, isOnboardingReady } from "../../lib/onboardingStatus";
 
 type DashboardTopbarProps = {
   brandName: string;
@@ -28,28 +29,40 @@ function statusStyles(status: BrokerConnectionStatus): {
   label: string;
   indicator: React.ReactNode;
 } {
-  switch (status) {
-    case "connected":
-      return {
-        container: "bg-emerald-500/10 text-emerald-400",
-        label: "Connected",
-        indicator: (
-          <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
-        ),
-      };
-    case "pending":
-      return {
-        container: "bg-amber-500/10 text-amber-400",
-        label: "Pending verification",
-        indicator: <WarningIcon />,
-      };
-    default:
-      return {
-        container: "bg-zinc-800 text-zinc-400",
-        label: "Not connected",
-        indicator: <WarningIcon className="text-zinc-500" />,
-      };
+  if (isOnboardingReady(status)) {
+    return {
+      container: "bg-emerald-500/10 text-emerald-400",
+      label: formatBrokerStatusLabel(status),
+      indicator: <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden />,
+    };
   }
+  if (status === "failed" || status === "disabled") {
+    return {
+      container: "bg-red-500/10 text-red-400",
+      label: formatBrokerStatusLabel(status),
+      indicator: <WarningIcon className="text-red-400" />,
+    };
+  }
+  if (
+    status === "submitted" ||
+    status === "provisioning" ||
+    status === "operator_action" ||
+    status === "verifying" ||
+    status === "pending" ||
+    status === "active_trial" ||
+    status === "trial_expired"
+  ) {
+    return {
+      container: "bg-amber-500/10 text-amber-400",
+      label: formatBrokerStatusLabel(status),
+      indicator: <WarningIcon />,
+    };
+  }
+  return {
+    container: "bg-zinc-800 text-zinc-400",
+    label: formatBrokerStatusLabel(status),
+    indicator: <WarningIcon className="text-zinc-500" />,
+  };
 }
 
 export function DashboardTopbar({
@@ -60,8 +73,8 @@ export function DashboardTopbar({
   const router = useRouter();
   const status = statusStyles(brokerStatus);
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     router.push("/");
   }
 
@@ -88,16 +101,19 @@ export function DashboardTopbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <div
+        <Link
+          href="/onboarding"
           className={`hidden items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium sm:inline-flex ${status.container}`}
         >
           {status.indicator}
           {status.label}
-        </div>
+        </Link>
 
         <button
           type="button"
-          onClick={handleLogout}
+          onClick={() => {
+            void handleLogout();
+          }}
           className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
         >
           Log out
