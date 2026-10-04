@@ -1,14 +1,10 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { MarketEvents } from "../../components/news/MarketEvents";
-import { MarketSnapshot } from "../../components/news/MarketSnapshot";
-import { NewsCTA } from "../../components/news/NewsCTA";
-import { NewsExplorer } from "../../components/news/NewsExplorer";
-import { NewsHero } from "../../components/news/NewsHero";
-import { NewsWhy } from "../../components/news/NewsWhy";
-import {
-  getLatestNews,
-  getMarketEvents,
-  getMarketSnapshot,
-} from "../../lib/news";
+import { NEWS_FEED, NewsListPage, newsListMetadata } from "../../components/news/NewsListPage";
+import { NewsletterSignup } from "../../components/news/NewsletterSignup";
+import { PageHero } from "../../components/site/ui";
+import { getLiveMarketEvents, getPublishedNews } from "../../lib/news";
 import {
   buildBreadcrumbSchema,
   buildPageMetadataFromConfig,
@@ -17,76 +13,46 @@ import {
   resolveSiteUrl,
 } from "../../lib/seo";
 
-export async function generateMetadata() {
+const CALENDAR_COPY = {
+  title: "Forex economic calendar",
+  description: "Major forex economic releases for today and tomorrow, with forecasts and previous figures.",
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const articles = await getPublishedNews();
+  if (articles.length > 0) return newsListMetadata(1, null);
   return buildPageMetadataFromConfig({
-    title: "Forex Market News",
-    description:
-      "Daily forex market news, currency updates, economic events, and central bank developments from PipAngel.",
+    title: CALENDAR_COPY.title,
+    description: CALENDAR_COPY.description,
     path: "/news",
-    keywords: [
-      "forex market news",
-      "currency market updates",
-      "central bank news",
-      "economic calendar",
-      "FX news",
-    ],
+    keywords: ["forex economic calendar", "economic events", "central bank decisions"],
+    feed: NEWS_FEED,
   });
 }
 
+/** Articles first, with the calendar below. With no articles the page is just the calendar; with neither, there's no page. */
 export default async function NewsPage() {
-  const [articles, snapshot, events, siteConfig] = await Promise.all([
-    getLatestNews(),
-    getMarketSnapshot(),
-    getMarketEvents(),
-    getSiteConfig(),
-  ]);
+  const [articles, events] = await Promise.all([getPublishedNews(), getLiveMarketEvents()]);
+  if (articles.length > 0) return <NewsListPage page={1} category={null} events={events} />;
+  if (events.length === 0) notFound();
 
-  const siteUrl = resolveSiteUrl(siteConfig);
-  const brandName = siteConfig?.brand_name ?? "PipAngel";
-  const newest = articles[0]?.updatedAt;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: "Forex Market News",
-    description:
-      "Daily forex market news, currency updates, economic events, and central bank developments from PipAngel.",
-    url: `${siteUrl}/news`,
-    mainEntity: {
-      "@type": "ItemList",
-      itemListElement: articles.map((item, i) => ({
-        "@type": "ListItem",
-        position: i + 1,
-        item: {
-          "@type": "NewsArticle",
-          headline: item.title,
-          description: item.summary,
-          datePublished: item.publishedAt,
-          url: `${siteUrl}/news/${item.slug}`,
-          publisher: { "@type": "Organization", name: brandName },
-        },
-      })),
-    },
-  };
-  const breadcrumbSchema = buildBreadcrumbSchema(siteUrl, [
+  const siteUrl = resolveSiteUrl(await getSiteConfig());
+  const breadcrumb = buildBreadcrumbSchema(siteUrl, [
     { name: "Home", path: "/" },
-    { name: "News", path: "/news" },
+    { name: "Economic calendar", path: "/news" },
   ]);
 
   return (
-    <div className="min-w-0 bg-[#050505]">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLdScript([jsonLd, breadcrumbSchema]),
-        }}
-      />
-      <NewsHero updatedAt={newest} />
-      <MarketSnapshot items={snapshot} />
-      <NewsExplorer articles={articles} />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumb) }} />
+      <PageHero title={CALENDAR_COPY.title}>
+        <p>
+          Scheduled releases that tend to move currency prices. Big releases can widen spreads and cause fast
+          moves, including in copied trades.
+        </p>
+      </PageHero>
       <MarketEvents events={events} />
-      <NewsWhy />
-      <NewsCTA />
-    </div>
+      <NewsletterSignup source="news_calendar" />
+    </>
   );
 }

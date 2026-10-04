@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { PRICING_TIERS } from "../../../lib/pricing";
+import { usePricingTiers } from "../../../lib/usePricingTiers";
 import type { SubscriptionInfo } from "../../../lib/subscriptionData";
 
 export function PausedFeaturesList() {
@@ -31,7 +33,7 @@ export function PlanPriceSummary({
 }: {
   subscription: SubscriptionInfo;
 }) {
-  const tier = PRICING_TIERS.find((item) => item.name === subscription.plan);
+  const tier = usePricingTiers().find((item) => item.name === subscription.plan);
   if (!tier) return null;
 
   const isPremium = subscription.plan === "Premium";

@@ -1,10 +1,15 @@
 import { chromium } from "playwright";
 
 const BASE = process.env.E2E_BASE_URL || "https://pipsangel.com";
-const API = "https://api.pipsangel.com/api/v1";
-const DEMO_EMAIL = "demo@pipangel.com";
-const DEMO_PASSWORD = "demo12345";
-const EXPECTED_BUILD = process.env.E2E_EXPECT_BUILD || "1.0.0+2026.08.23-auth-fix";
+const API = process.env.E2E_API_URL || "https://api.pipsangel.com/api/v1";
+const DEMO_EMAIL = process.env.E2E_EMAIL;
+const DEMO_PASSWORD = process.env.E2E_PASSWORD;
+const EXPECTED_BUILD = process.env.E2E_EXPECT_BUILD;
+
+if (!DEMO_EMAIL || !DEMO_PASSWORD || !EXPECTED_BUILD) {
+  console.error("Set E2E_EMAIL, E2E_PASSWORD and E2E_EXPECT_BUILD. Use a dedicated test account.");
+  process.exit(2);
+}
 
 const results = [];
 

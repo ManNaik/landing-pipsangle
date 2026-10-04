@@ -25,6 +25,10 @@ export type NewsArticle = {
   updatedAt: string;
   readTime: string;
   image: string | null;
+  imageAlt?: string;
+  authorName?: string;
+  authorTitle?: string;
+  authorUrl?: string | null;
   visual: NewsVisualId;
   tags: string[];
   featured: boolean;
@@ -45,6 +49,11 @@ export type MarketEvent = {
   title: string;
   whenLabel: string;
   time: string;
+  actual?: string;
+  previous?: string;
+  consensus?: string;
+  impact?: string;
+  sourceUrl?: string;
   isDemo: boolean;
 };
 
@@ -64,7 +73,7 @@ export const DUMMY_NEWS: NewsArticle[] = [
     content: `${demoNotice}
 <p>Sample market commentary: traders often review upcoming economic releases when assessing the US dollar against major currency pairs. This demo article describes that process without reporting a live event.</p>
 <p>In a typical session, attention concentrates on employment, inflation, and growth indicators because those figures can influence interest rate expectations. Currency positioning then adjusts as participants update those expectations.</p>
-<p>PipAngel publishes this page to preview how live forex news will appear once a real news source is connected. Treat every figure and headline on this page as interface sample data.</p>`,
+<p>PipsAngel publishes this page to preview how live forex news will appear once a real news source is connected. Treat every figure and headline on this page as interface sample data.</p>`,
     category: "Forex",
     source: "Demo Source",
     sourceUrl: null,

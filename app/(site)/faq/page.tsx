@@ -1,12 +1,9 @@
 import { FAQExplorer } from "../../components/faq/FAQExplorer";
-import { LeadChatbot } from "../../components/LeadChatbot";
+import { FinalCta } from "../../components/site/FinalCta";
 import { fetchFaqFromApi } from "../../lib/cmsApi";
-import {
-  getFaqItems,
-  getFaqSections,
-  type FaqItem as LocalFaqItem,
-  type FaqSection,
-} from "../../lib/faqContent";
+import { getFaqSections, type FaqSection } from "../../lib/faqContent";
+import { getPublishedStats } from "../../lib/performance";
+import { getPricingTiers } from "../../lib/pricing";
 import {
   buildBreadcrumbSchema,
   buildFAQPageSchema,
@@ -18,94 +15,60 @@ import {
 
 export async function generateMetadata() {
   return buildPageMetadataFromConfig({
-    title: "Forex Trading FAQ",
+    title: "FAQ",
     description:
-      "Find answers about PipAngel, automated forex trading, MT5, risk management, performance, pricing, and account support.",
+      "Answers about connecting IC Markets MT5 to PipsAngel, what we can and can't do in your account, the free trial, billing and risk.",
     path: "/faq",
-    keywords: [
-      "PipAngel FAQ",
-      "automated forex trading questions",
-      "MT5 FAQ",
-      "forex risk management",
-      "PipAngel pricing",
-    ],
+    keywords: ["PipsAngel FAQ", "IC Markets MT5 copy trading", "forex copy trading questions"],
   });
 }
 
-function mergeApiFaq(sections: FaqSection[], apiItems: Array<{ id: string; question: string; answer: string }>): FaqSection[] {
-  if (!apiItems.length) return sections;
-
-  const apiSection: FaqSection = {
-    id: "support",
-    navLabel: "Latest answers",
-    heading: "From PipAngel",
-    description: "Published answers from the PipAngel knowledge base.",
-    items: apiItems.map((item, index) => ({
-      id: `api-${item.id}`,
-      category: "support" as const,
-      question: item.question,
-      answer: item.answer,
-      order: index + 1,
-      keywords: [],
-    })),
-  };
-
-  const withoutSupport = sections.filter((section) => section.id !== "support");
-  const existingSupport = sections.find((section) => section.id === "support");
-  return [
-    apiSection,
-    ...withoutSupport,
-    ...(existingSupport
-      ? [
-          {
-            ...existingSupport,
-            items: existingSupport.items,
-          },
-        ]
-      : []),
-  ];
-}
-
 export default async function FAQPage() {
-  const localSections = getFaqSections();
-  const localItems = getFaqItems();
-  const apiItems = await fetchFaqFromApi();
-  const sections = mergeApiFaq(localSections, apiItems);
+  const [siteConfig, tiers, stats, apiItems] = await Promise.all([
+    getSiteConfig(),
+    getPricingTiers(),
+    getPublishedStats(),
+    fetchFaqFromApi(),
+  ]);
 
-  const schemaItems: LocalFaqItem[] = [
-    ...apiItems.map((item, index) => ({
-      id: `api-${item.id}`,
-      category: "support" as const,
-      question: item.question,
-      answer: item.answer,
-      order: index,
-      keywords: [] as string[],
-    })),
-    ...localItems,
-  ];
+  const sections: FaqSection[] = getFaqSections({
+    tiers,
+    supportEmail: siteConfig.support_email ?? "",
+    responseTime: siteConfig.support_response_time,
+    hasPublicResults: Boolean(stats || siteConfig.track_record_url),
+  });
 
-  const siteConfig = await getSiteConfig();
+  if (apiItems.length > 0) {
+    sections.push({
+      id: "more",
+      navLabel: "More questions",
+      heading: "More questions",
+      items: apiItems.map((item, index) => ({
+        id: `cms-${item.id}`,
+        category: "more",
+        question: item.question,
+        answer: item.answer,
+        order: index,
+        keywords: [],
+      })),
+    });
+  }
+
   const siteUrl = resolveSiteUrl(siteConfig);
-
   const faqSchema = buildFAQPageSchema(
-    schemaItems.map((item) => ({ question: item.question, answer: item.answer })),
+    sections.flatMap((section) => section.items.map((item) => ({ question: item.question, answer: item.answer }))),
     siteUrl
   );
-  const breadcrumbSchema = buildBreadcrumbSchema(siteUrl, [
+  const breadcrumb = buildBreadcrumbSchema(siteUrl, [
     { name: "Home", path: "/" },
     { name: "FAQ", path: "/faq" },
   ]);
 
   return (
-    <div className="min-w-0 bg-[#050505]">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLdScript([faqSchema, breadcrumbSchema]),
-        }}
-      />
-      <FAQExplorer sections={sections} />
-      <LeadChatbot />
-    </div>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript([faqSchema, breadcrumb]) }} />
+      <FAQExplorer sections={sections} supportEmail={siteConfig.support_email ?? ""} />
+      <FinalCta title="Still deciding? Try it for 4 days" location="faq_final" />
+    </>
   );
 }

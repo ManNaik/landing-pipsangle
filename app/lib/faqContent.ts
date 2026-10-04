@@ -1,17 +1,14 @@
-import { formatPrice, PRICING_TIERS } from "./pricing";
+import { dailyPrice, formatPrice, PRICING_TIERS, type PricingTier } from "./pricing";
 import { FREE_TRIAL_DAYS } from "./trial";
 
 export type FaqCategoryId =
   | "getting-started"
-  | "pipangel"
-  | "ai"
-  | "automation"
-  | "mt5"
-  | "broker"
+  | "how-it-works"
+  | "account"
   | "risk"
-  | "performance"
   | "pricing"
-  | "support";
+  | "support"
+  | "more";
 
 export type FaqItem = {
   id: string;
@@ -38,506 +35,278 @@ export const FAQ_CATEGORIES: Array<{
   heading: string;
   description?: string;
 }> = [
-  {
-    id: "getting-started",
-    navLabel: "Getting Started",
-    heading: "Getting Started",
-    description: "Everything you need to know before creating your PipAngel account.",
-  },
-  {
-    id: "pipangel",
-    navLabel: "PipAngel",
-    heading: "About PipAngel",
-  },
-  {
-    id: "ai",
-    navLabel: "Trading",
-    heading: "AI Market Intelligence",
-    description: "Understand how PipAngel uses market intelligence as part of its trading system.",
-  },
-  {
-    id: "automation",
-    navLabel: "Automation",
-    heading: "Automated Trading",
-  },
-  {
-    id: "mt5",
-    navLabel: "MT5",
-    heading: "MetaTrader 5",
-  },
-  {
-    id: "broker",
-    navLabel: "Broker",
-    heading: "Broker & Trading Account",
-  },
-  {
-    id: "risk",
-    navLabel: "Risk Management",
-    heading: "Risk Management",
-    description: "Understand how PipAngel approaches capital exposure and trading risk.",
-  },
-  {
-    id: "performance",
-    navLabel: "Performance",
-    heading: "Performance & Transparency",
-  },
-  {
-    id: "pricing",
-    navLabel: "Pricing",
-    heading: "Pricing & Trial",
-  },
-  {
-    id: "support",
-    navLabel: "Account & Support",
-    heading: "Account & Support",
-  },
+  { id: "getting-started", navLabel: "Getting started", heading: "Getting started" },
+  { id: "how-it-works", navLabel: "How it works", heading: "How copying works" },
+  { id: "account", navLabel: "Your account", heading: "Your account and your money" },
+  { id: "risk", navLabel: "Risk and results", heading: "Risk and results" },
+  { id: "pricing", navLabel: "Pricing", heading: "Pricing and the free trial" },
+  { id: "support", navLabel: "Support", heading: "Support" },
 ];
 
-function item(
-  partial: Omit<FaqItem, "keywords"> & { keywords?: string[] }
-): FaqItem {
-  return {
-    ...partial,
-    keywords: partial.keywords ?? [],
-  };
-}
+type FaqContext = {
+  tiers?: PricingTier[];
+  supportEmail: string;
+  responseTime?: string;
+  hasPublicResults?: boolean;
+};
 
-export function getFaqItems(): FaqItem[] {
-  const basic = PRICING_TIERS.find((tier) => tier.id === "basic")!;
-  const premium = PRICING_TIERS.find((tier) => tier.id === "premium")!;
+export function getFaqItems({ tiers = PRICING_TIERS, supportEmail, responseTime, hasPublicResults }: FaqContext): FaqItem[] {
+  const basic = tiers.find((tier) => tier.id === "basic") ?? PRICING_TIERS[0];
+  const premium = tiers.find((tier) => tier.id === "premium") ?? PRICING_TIERS[1];
 
-  return [
-    item({
-      id: "what-is-pipangel",
+  const items: Array<Omit<FaqItem, "keywords"> & { keywords?: string[] }> = [
+    {
+      id: "what-is-pipsangel",
       category: "getting-started",
-      question: "What is PipAngel?",
+      question: "What is PipsAngel?",
       answer:
-        "PipAngel is a forex trading platform that combines market intelligence, automated trading, risk management, performance tracking, and trader support in one platform.",
+        "PipsAngel copies trades to your own IC Markets MetaTrader 5 account. Once your account is connected, each trade we place is opened in your account automatically, sized for your balance and settings, with a stop loss.",
       order: 1,
       featured: true,
-      keywords: ["what is", "platform", "overview"],
-    }),
-    item({
-      id: "how-pipangel-works",
+      keywords: ["copy trading", "what", "service"],
+    },
+    {
+      id: "what-do-i-need",
       category: "getting-started",
-      question: "How does PipAngel work?",
+      question: "What do I need to start?",
       answer:
-        "PipAngel analyzes market conditions and applies predefined trading strategies with risk controls. Users can access the platform through their dashboard and choose how they want to use the available automation features.",
+        "A live IC Markets account on MetaTrader 5, and three details from it: your MT5 login number, your server name and your MT5 password. You don't need to install anything or keep a computer running.",
       order: 2,
-      keywords: ["how it works", "dashboard", "strategy"],
-    }),
-    item({
-      id: "need-experience",
+      featured: true,
+      keywords: ["requirements", "ic markets", "mt5", "login", "server"],
+      links: [{ label: "How to open an IC Markets account", href: "/ic-markets-account" }],
+    },
+    {
+      id: "other-brokers",
       category: "getting-started",
-      question: "Do I need previous forex trading experience?",
+      question: "Can I use a broker other than IC Markets?",
       answer:
-        "No. However, users should understand the risks involved in forex trading before using any automated trading system.",
+        "Not yet. PipsAngel only works with IC Markets accounts on MetaTrader 5. If you use another broker, you'd need to open an IC Markets account first.",
       order: 3,
-      keywords: ["beginner", "experience", "new"],
-    }),
-    item({
-      id: "how-to-get-started",
+      keywords: ["broker", "exness", "xm", "pepperstone", "mt4"],
+    },
+    {
+      id: "how-long-setup",
       category: "getting-started",
-      question: "How do I get started?",
-      answer: `Create your account, start the ${FREE_TRIAL_DAYS}-day free trial, connect the supported trading setup, configure your preferences, and review the available controls from your dashboard.`,
+      question: "How long does setup take?",
+      answer:
+        "Creating your PipsAngel account takes a couple of minutes. After you submit your MT5 details, we start a dedicated MT5 terminal for you and check that it logs in to your account. Your dashboard shows each step. When all our terminals are in use, you're queued and it takes longer.",
       order: 4,
-      keywords: ["start", "signup", "onboarding", "trial"],
-    }),
-    item({
-      id: "is-there-a-free-trial",
+      keywords: ["setup", "provisioning", "time", "queue"],
+    },
+    {
+      id: "experience",
       category: "getting-started",
-      question: "Is there a free trial?",
-      answer: `Yes. New users can access a ${FREE_TRIAL_DAYS}-day free trial.`,
+      question: "Do I need trading experience?",
+      answer:
+        "No, but you should understand that forex trading is risky and that you can lose money. Only trade with money you can afford to lose.",
       order: 5,
-      keywords: ["trial", "free", "4 day", "4-day"],
-    }),
-    item({
-      id: "what-pipangel-provides",
-      category: "pipangel",
-      question: "What does PipAngel provide?",
+      keywords: ["beginner", "experience"],
+    },
+    {
+      id: "how-trades-are-copied",
+      category: "how-it-works",
+      question: "How are trades copied to my account?",
       answer:
-        "PipAngel provides market intelligence, automated trading infrastructure, risk controls, performance tracking, and account support for forex traders.",
+        "When PipsAngel opens a trade, the same trade is sent to every connected account where copying is switched on. The MT5 terminal we run for you calculates the position size for your account and places the order. You see it in MT5 and in your PipsAngel dashboard.",
       order: 1,
-      keywords: ["features", "what you get"],
-    }),
-    item({
-      id: "forex-signals",
-      category: "pipangel",
-      question: "Does PipAngel provide forex signals?",
+      featured: true,
+      keywords: ["copy", "mechanism", "orders", "execution"],
+    },
+    {
+      id: "stop-loss",
+      category: "how-it-works",
+      question: "Does every trade have a stop loss?",
       answer:
-        "PipAngel is focused on automated trading and market intelligence rather than simply sending standalone trade calls. The platform is designed to analyze market conditions and execute strategies through supported trading infrastructure.",
+        "Yes. Every trade is opened with a stop loss; the system rejects a trade without one. A stop loss limits the planned loss on a trade, but in fast or gapping markets a trade can close at a worse price than the stop.",
       order: 2,
-      keywords: ["signals", "trade calls", "alerts"],
-    }),
-    item({
-      id: "what-makes-different",
-      category: "pipangel",
-      question: "What makes PipAngel different?",
-      answer:
-        "PipAngel combines market analysis, automated execution, risk management, performance visibility, and dashboard controls into one system.",
+      keywords: ["stop loss", "sl", "risk"],
+    },
+    {
+      id: "position-size",
+      category: "how-it-works",
+      question: "How is the position size worked out?",
+      answer: `Each trade is sized from your account capital and the distance to the stop loss. Your capital utilization setting controls how much of your balance is used: it's fixed at 25% on Basic and adjustable from 10% to 100% on Premium.`,
       order: 3,
-      keywords: ["difference", "unique"],
-    }),
-    item({
-      id: "is-pipangel-a-broker",
-      category: "pipangel",
-      question: "Is PipAngel a broker?",
+      keywords: ["lot size", "position size", "capital utilization", "risk"],
+    },
+    {
+      id: "how-many-trades",
+      category: "how-it-works",
+      question: "How many trades will be opened?",
       answer:
-        "No. PipAngel is not a forex broker. Users connect their supported trading account through the supported trading infrastructure.",
+        "It depends on market conditions. Some days have several trades and some have none. You'll see every trade in your dashboard and in MT5.",
       order: 4,
-      keywords: ["broker", "not a broker", "funds"],
-    }),
-    item({
-      id: "what-is-ai-engine",
-      category: "ai",
-      question: "What is the AI Market Intelligence Engine?",
+      keywords: ["frequency", "daily limit", "how many"],
+    },
+    {
+      id: "computer-on",
+      category: "how-it-works",
+      question: "Do I need to keep my computer or MT5 app open?",
       answer:
-        "The AI Market Intelligence Engine analyzes market conditions and relevant risk factors to help identify potential trading opportunities and market conditions.",
-      order: 1,
-      keywords: ["ai", "intelligence", "engine", "analysis", "trading"],
-    }),
-    item({
-      id: "ai-guarantee-profits",
-      category: "ai",
-      question: "Does AI guarantee profitable trades?",
-      answer:
-        "No. AI and automated systems cannot guarantee profits. Forex markets involve substantial risk and market conditions can change quickly.",
-      order: 2,
-      keywords: ["guarantee", "profit", "ai", "trading"],
-    }),
-    item({
-      id: "ai-make-trades",
-      category: "ai",
-      question: "Does AI make trades automatically?",
-      answer:
-        "The AI Market Intelligence Engine is one component of the broader PipAngel system. Automated execution depends on the user's enabled automation setup and account configuration.",
-      order: 3,
-      keywords: ["automatic", "execution", "ai", "trading"],
-    }),
-    item({
-      id: "what-markets",
-      category: "ai",
-      question: "What markets does PipAngel analyze?",
-      answer:
-        "PipAngel is focused on the forex market and the currency pairs supported by the trading system.",
-      order: 4,
-      keywords: ["markets", "pairs", "forex", "currencies", "trading"],
-    }),
-    item({
-      id: "what-is-automated-trading",
-      category: "automation",
-      question: "What is automated trading?",
-      answer:
-        "Automated trading allows predefined trading strategies to execute through connected trading infrastructure without requiring the user to manually place every order.",
-      order: 1,
-      keywords: ["bot", "auto", "orders"],
-    }),
-    item({
-      id: "how-automation-works",
-      category: "automation",
-      question: "How does PipAngel automation work?",
-      answer:
-        "The system evaluates the configured strategy, applies risk controls, and sends the appropriate execution instructions through the connected trading setup.",
-      order: 2,
-      keywords: ["mt5", "execution", "risk"],
-    }),
-    item({
-      id: "control-automation",
-      category: "automation",
-      question: "Can I control the automation?",
-      answer:
-        "Yes. Users can manage available settings, monitor trades, adjust supported risk parameters, pause automation, and disconnect their account through the dashboard.",
-      order: 3,
-      keywords: ["pause", "dashboard", "settings", "control"],
-    }),
-    item({
-      id: "stop-automation",
-      category: "automation",
-      question: "Can I stop automation?",
-      answer:
-        "Yes. The dashboard provides controls to pause or disconnect the automation.",
-      order: 4,
-      keywords: ["stop", "pause", "disable", "disconnect"],
-    }),
-    item({
-      id: "runs-continuously",
-      category: "automation",
-      question: "Does automation run continuously?",
-      answer:
-        "The system is designed for automated forex execution during supported market conditions and trading hours.",
+        "No. Your MT5 terminal runs on our servers around the clock. You can still open MT5 on your phone or computer to watch your trades.",
       order: 5,
-      keywords: ["24/7", "hours", "continuous"],
-    }),
-    item({
-      id: "computer-running",
-      category: "automation",
-      question: "Do I have to keep my computer running?",
+      keywords: ["vps", "computer", "running", "app"],
+    },
+    {
+      id: "manual-trades",
+      category: "how-it-works",
+      question: "Can I trade manually on the same account?",
       answer:
-        "This depends on the connected execution setup. PipAngel will provide the required setup instructions when automation is enabled.",
+        "You can, but manual trades use the same balance and margin, which changes how copied trades are sized and how much risk the account carries. We recommend using a separate account for manual trading.",
       order: 6,
-      keywords: ["computer", "vps", "pc", "laptop", "running"],
-    }),
-    item({
-      id: "what-is-mt5",
-      category: "mt5",
-      question: "What is MT5?",
+      keywords: ["manual", "own trades"],
+    },
+    {
+      id: "withdraw",
+      category: "account",
+      question: "Can PipsAngel withdraw or move my money?",
       answer:
-        "MetaTrader 5, commonly known as MT5, is a trading platform used to access markets and support automated trading strategies.",
+        "No. Your money stays in your IC Markets account. We only get your MT5 trading login, which can open, change and close trades. Withdrawals need your IC Markets client-area login, which we never ask for.",
       order: 1,
-      keywords: ["metatrader", "mt5", "platform"],
-    }),
-    item({
-      id: "support-mt5",
-      category: "mt5",
-      question: "Does PipAngel support MT5?",
+      featured: true,
+      keywords: ["withdraw", "funds", "money", "safe", "custody"],
+      links: [{ label: "How account access works", href: "/security" }],
+    },
+    {
+      id: "password",
+      category: "account",
+      question: "Why do you need my MT5 password, and how is it stored?",
       answer:
-        "Yes. PipAngel is designed around MT5-compatible automated trading infrastructure.",
+        "The MT5 terminal we run for you needs it to log in to your account. The password is sent once from our website to our trading servers over a signed connection, stored there encrypted, and never returned by any of our systems or written to logs. Our website doesn't keep a copy.",
       order: 2,
-      keywords: ["mt5", "metatrader", "support"],
-    }),
-    item({
-      id: "connect-mt5",
-      category: "mt5",
-      question: "How do I connect MT5?",
+      featured: true,
+      keywords: ["password", "credentials", "encrypted", "security"],
+      links: [{ label: "Security details", href: "/security" }],
+    },
+    {
+      id: "stop-copying",
+      category: "account",
+      question: "How do I stop copying or disconnect?",
       answer:
-        "The connection process is explained inside PipAngel onboarding and the dashboard. You create an account, then connect the supported IC Markets MetaTrader 5 setup from there.",
+        "Switch copying off in your dashboard and no new trades are sent to your account. Trades that are already open are still closed as normal, and you can close them yourself in MT5 at any time. To cut our access completely, change your MT5 password in the IC Markets client area.",
       order: 3,
-      keywords: ["connect", "mt5", "onboarding", "ic markets"],
-    }),
-    item({
-      id: "need-to-understand-mt5",
-      category: "mt5",
-      question: "Do I need to understand MT5?",
+      featured: true,
+      keywords: ["stop", "pause", "disconnect", "revoke"],
+    },
+    {
+      id: "broker",
+      category: "account",
+      question: "Is PipsAngel a broker?",
       answer:
-        "Basic familiarity can be helpful, but PipAngel is designed to simplify the automation process.",
+        "No. PipsAngel is independent of IC Markets. We don't hold client money or give personal financial advice. IC Markets holds your account and your funds.",
       order: 4,
-      keywords: ["beginner", "mt5", "learn"],
-    }),
-    item({
-      id: "which-broker",
-      category: "broker",
-      question: "Which broker does PipAngel currently support?",
-      answer: "PipAngel currently supports IC Markets.",
-      order: 1,
-      keywords: ["broker", "ic markets", "icmarkets"],
-    }),
-    item({
-      id: "other-broker",
-      category: "broker",
-      question: "Can I use another broker?",
-      answer:
-        "IC Markets is the currently supported broker. Additional broker integrations may be introduced in the future.",
-      order: 2,
-      keywords: ["pepperstone", "broker", "other", "exness", "xm"],
-    }),
-    item({
-      id: "control-of-money",
-      category: "broker",
-      question: "Do I give PipAngel control of my money?",
-      answer:
-        "No. PipAngel is not a broker and does not hold your trading funds. Your capital remains in your IC Markets trading account. Connecting the account allows PipAngel to send execution instructions through the supported MT5 setup from the dashboard.",
-      order: 3,
-      keywords: ["funds", "money", "custody", "wallet", "credentials"],
-    }),
-    item({
-      id: "guarantee-profits",
+      keywords: ["broker", "regulated", "affiliated"],
+    },
+    {
+      id: "lose-money",
       category: "risk",
-      question: "Does PipAngel guarantee profits?",
-      answer: "No. There are no guaranteed returns in forex trading.",
+      question: "Can I lose money?",
+      answer:
+        "Yes. Losing trades are part of trading, and a run of losses can reduce your balance significantly. Stop losses limit the planned loss per trade but don't guarantee it. Past results don't guarantee future results.",
       order: 1,
+      featured: true,
+      keywords: ["loss", "risk", "safe"],
+    },
+    {
+      id: "results",
+      category: "risk",
+      question: "Where can I see your results?",
+      answer: hasPublicResults
+        ? "On our Results page, which lists closed trades and the figures calculated from them."
+        : "We only publish results from real, verified trading. Our public track record isn't live yet, so we don't show performance figures on this site.",
+      order: 2,
+      keywords: ["results", "performance", "track record", "win rate"],
+      links: hasPublicResults ? [{ label: "View results", href: "/trading-performance" }] : undefined,
+    },
+    {
+      id: "guarantee",
+      category: "risk",
+      question: "Do you guarantee profits?",
+      answer: "No. Nobody can guarantee trading profits, and you should be wary of anyone who does.",
+      order: 3,
       keywords: ["guarantee", "profit", "returns"],
-    }),
-    item({
-      id: "control-risk",
-      category: "risk",
-      question: "Can I control my trading risk?",
-      answer:
-        "Yes, where supported by your selected plan and configuration. Basic uses predefined risk controls. Premium unlocks greater control over risk settings, leverage, and capital utilization.",
-      order: 2,
-      keywords: ["risk", "basic", "premium", "settings"],
-    }),
-    item({
-      id: "position-sizing",
-      category: "risk",
-      question: "What is position sizing?",
-      answer:
-        "Position sizing determines how much capital is allocated to an individual trade relative to the account and configured risk parameters.",
-      order: 3,
-      keywords: ["lot", "size", "exposure", "capital"],
-    }),
-    item({
-      id: "what-is-drawdown",
-      category: "risk",
-      question: "What is drawdown?",
-      answer:
-        "Drawdown measures the decline from an account's previous peak equity or balance to a subsequent low point.",
-      order: 4,
-      keywords: ["drawdown", "equity", "peak"],
-    }),
-    item({
-      id: "why-risk-management",
-      category: "risk",
-      question: "Why is risk management important?",
-      answer:
-        "Because even a strategy with profitable historical results can experience losing trades and periods of drawdown.",
-      order: 5,
-      keywords: ["risk", "losses", "drawdown"],
-    }),
-    item({
-      id: "automation-can-lose",
-      category: "risk",
-      question: "Can automated trading lose money?",
-      answer:
-        "Yes. Automated trading can generate losses. Automation does not eliminate market risk.",
-      order: 6,
-      keywords: ["lose", "loss", "risk", "automation"],
-    }),
-    item({
-      id: "where-performance",
-      category: "performance",
-      question: "Where can I see PipAngel performance?",
-      answer:
-        "Users can review available performance information through the PipAngel Performance page.",
+    },
+    {
+      id: "trial-start",
+      category: "pricing",
+      question: "When does the free trial start?",
+      answer: `When your MT5 account is connected and verified, not when you sign up. It lasts ${FREE_TRIAL_DAYS} days and you don't pay anything to start.`,
       order: 1,
-      keywords: ["stats", "results", "track record"],
-      links: [{ label: "View Performance", href: "/trading-performance" }],
-    }),
-    item({
-      id: "results-guaranteed",
-      category: "performance",
-      question: "Are the results guaranteed?",
-      answer:
-        "No. Historical or demonstrated performance does not guarantee future results.",
+      featured: true,
+      keywords: ["trial", "free", "start"],
+    },
+    {
+      id: "cost",
+      category: "pricing",
+      question: "How much does it cost?",
+      answer: `Basic is ${formatPrice(basic.price)} for ${basic.periodLabel} (${dailyPrice(basic)} a day). Premium is ${formatPrice(premium.price)} for ${premium.periodLabel} (${dailyPrice(premium)} a day). Both start with the free trial.`,
       order: 2,
-      keywords: ["guarantee", "past performance"],
-    }),
-    item({
-      id: "what-to-look-at",
-      category: "performance",
-      question: "What information should I look at when evaluating performance?",
+      keywords: ["price", "cost", "basic", "premium"],
+      links: [{ label: "Compare plans", href: "/pricing" }],
+    },
+    {
+      id: "renewal",
+      category: "pricing",
+      question: "Does it renew automatically? How do I cancel?",
       answer:
-        "Users should consider factors such as win rate, average pips, profit and loss, drawdown, number of trades, risk exposure, and trading period.",
+        "Nothing renews automatically. Each PayPal payment covers one period. To stop, don't pay for the next one and copying ends when the current period does. There's nothing to cancel.",
       order: 3,
-      keywords: ["win rate", "pips", "drawdown", "metrics"],
-    }),
-    item({
-      id: "individual-trades",
-      category: "performance",
-      question: "Does PipAngel publish individual trades?",
+      featured: true,
+      keywords: ["cancel", "renew", "subscription", "refund"],
+    },
+    {
+      id: "after-trial",
+      category: "pricing",
+      question: "What happens when the trial ends?",
       answer:
-        "The Performance page shows recorded trades when live performance data is available. When live data is not connected, that page is labeled as demo data.",
+        "Copying stops until you pay for a plan from your dashboard. Your setup is kept for a short time, so you can continue without connecting again.",
       order: 4,
-      keywords: ["trades", "history", "public", "demo"],
-    }),
-    item({
-      id: "live-performance-report",
-      category: "performance",
-      question: "Can I get a live performance report?",
-      answer:
-        "Yes, where the live performance reporting system is connected to the active trading account.",
+      keywords: ["trial end", "expired"],
+    },
+    {
+      id: "payment",
+      category: "pricing",
+      question: "How do I pay?",
+      answer: "With PayPal, from the subscription page in your dashboard.",
       order: 5,
-      keywords: ["live", "report", "account"],
-      links: [{ label: "View Performance", href: "/trading-performance" }],
-    }),
-    item({
-      id: "how-much-cost",
-      category: "pricing",
-      question: "How much does PipAngel cost?",
-      answer: `Basic is ${formatPrice(basic.price)} per ${basic.periodLabel}. Premium is ${formatPrice(premium.price)} per ${premium.periodLabel}. Review the Pricing page for the current plan comparison.`,
+      keywords: ["paypal", "payment", "card"],
+    },
+    {
+      id: "contact",
+      category: "support",
+      question: "How do I contact you?",
+      answer: `Email ${supportEmail} or use the contact form. We reply by email${responseTime ? `, usually ${responseTime}` : ""}.`,
       order: 1,
-      keywords: ["price", "cost", "basic", "premium", "$30", "$99"],
-      links: [{ label: "View Pricing", href: "/pricing" }],
-    }),
-    item({
-      id: "trial-length",
-      category: "pricing",
-      question: "How long is the free trial?",
-      answer: `Every new account receives a ${FREE_TRIAL_DAYS}-day free trial.`,
+      keywords: ["contact", "email", "help", "support"],
+      links: [{ label: "Contact us", href: "/contact" }],
+    },
+    {
+      id: "setup-help",
+      category: "support",
+      question: "Can you help me connect my account?",
+      answer:
+        "Yes. If your MT5 details are rejected or setup stalls, contact us with your account email and we'll help. Never send us your IC Markets client-area password.",
       order: 2,
-      keywords: ["trial", "4 day", "4-day", "free"],
-    }),
-    item({
-      id: "pay-during-trial",
-      category: "pricing",
-      question: "Do I need to pay during the trial?",
-      answer: `No payment is required to start the ${FREE_TRIAL_DAYS}-day free trial. To continue after the trial, activate Basic or Premium with PayPal from your account.`,
-      order: 3,
-      keywords: ["pay", "payment", "paypal", "trial", "card"],
-    }),
-    item({
-      id: "upgrade-plan",
-      category: "pricing",
-      question: "Can I upgrade my plan?",
-      answer:
-        "Yes. You can select Basic or Premium from your account and activate the plan with PayPal.",
-      order: 4,
-      keywords: ["upgrade", "change plan", "premium", "basic"],
-    }),
-    item({
-      id: "can-i-cancel",
-      category: "pricing",
-      question: "Can I cancel?",
-      answer:
-        "Plan selection and PayPal checkout are managed from your PipAngel account. For billing questions, contact support.",
-      order: 5,
-      keywords: ["cancel", "stop billing", "subscription"],
-    }),
-    item({
-      id: "subscription-expires",
-      category: "pricing",
-      question: "What happens when my subscription expires?",
-      answer:
-        "When a trial or paid plan ends, automation access is paused until you activate or renew a plan from your account. Saved settings remain on file.",
-      order: 6,
-      keywords: ["expire", "renew", "paused", "ended"],
-    }),
-    item({
-      id: "live-support",
-      category: "support",
-      question: "Do you provide live support?",
-      answer:
-        "Yes. PipAngel provides live support for account, dashboard, and automation-related questions.",
-      order: 1,
-      keywords: ["chat", "help", "live", "support"],
-    }),
-    item({
-      id: "contact-support",
-      category: "support",
-      question: "How can I contact support?",
-      answer:
-        "Use the live support chat on the website, or send a message through the Contact page. Support can help with account, dashboard, and automation setup questions.",
-      order: 2,
-      keywords: ["contact", "chat", "email", "help"],
-      links: [{ label: "Contact page", href: "/contact" }],
-    }),
-    item({
-      id: "support-configure-automation",
-      category: "support",
-      question: "Can support help me configure automation?",
-      answer: "Yes, for setup and platform-related assistance.",
-      order: 3,
-      keywords: ["setup", "configure", "help", "automation"],
-    }),
-    item({
-      id: "dashboard-controls",
-      category: "support",
-      question: "Can I control my trades from the dashboard?",
-      answer:
-        "Yes. The dashboard is designed to provide visibility and available controls over the connected trading setup.",
-      order: 4,
-      keywords: ["dashboard", "monitor", "pause", "trades"],
-    }),
+      keywords: ["help", "setup", "connect"],
+    },
   ];
+
+  return items.map((item) => ({ ...item, keywords: item.keywords ?? [] }));
 }
 
-export function getFaqSections(): FaqSection[] {
-  const items = getFaqItems();
+export function getFaqSections(context: FaqContext): FaqSection[] {
+  const items = getFaqItems(context);
   return FAQ_CATEGORIES.map((category) => ({
     ...category,
-    items: items
-      .filter((faq) => faq.category === category.id)
-      .sort((a, b) => a.order - b.order),
+    items: items.filter((faq) => faq.category === category.id).sort((a, b) => a.order - b.order),
   }));
+}
+
+export function getFeaturedFaqs(context: FaqContext, limit = 6): FaqItem[] {
+  return getFaqItems(context)
+    .filter((item) => item.featured)
+    .slice(0, limit);
 }
 
 export function filterFaqItems(items: FaqItem[], query: string): FaqItem[] {

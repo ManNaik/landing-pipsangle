@@ -53,7 +53,7 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post) notFound();
 
   const siteUrl = resolveSiteUrl(config);
-  const brandName = config?.brand_name ?? "PipAngel";
+  const brandName = config?.brand_name ?? "PipsAngel";
   const related = getRelatedBlog(all, slug);
 
   const blogSchema = buildBlogPostingSchema(siteUrl, brandName, {

@@ -18,7 +18,7 @@ export type ReferralProgram = {
 
 export const DEMO_REFERRAL_PROGRAM: ReferralProgram = {
   referralCode: "DEMO123",
-  referralLink: "https://pipangel.com/ref/DEMO123",
+  referralLink: "https://pipsangel.com/ref/DEMO123",
   completedReferrals: 3,
   targetReferrals: 5,
   bonusAmount: 20,

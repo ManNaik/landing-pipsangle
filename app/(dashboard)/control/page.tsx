@@ -4,7 +4,7 @@ import { TradingSettings } from "../_components/TradingSettings";
 export async function generateMetadata() {
   return buildPageMetadataFromConfig({
     title: "Control",
-    description: "Manage your PipAngel trading and automation settings.",
+    description: "Manage your PipsAngel trading and automation settings.",
     path: "/control",
     noIndex: true,
   });

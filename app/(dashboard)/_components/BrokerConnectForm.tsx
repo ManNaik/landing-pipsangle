@@ -147,8 +147,13 @@ export function BrokerConnectForm({
           placeholder="••••••••"
           className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60"
         />
-        <p className="mt-1.5 text-xs text-zinc-500">
-          Sent securely for provisioning only. Never stored in your browser.
+        <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
+          Use your main MT5 password; an investor password can&apos;t place trades. It&apos;s sent once to our
+          trading servers and stored there encrypted. This login can open and close trades but can&apos;t withdraw
+          money. Change it at IC Markets any time to cut access.{" "}
+          <a href="/security" target="_blank" className="text-emerald-400 underline underline-offset-2">
+            Security details
+          </a>
         </p>
       </div>
 
@@ -161,7 +166,7 @@ export function BrokerConnectForm({
           className="mt-1 h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-emerald-500 focus:ring-emerald-500/40"
         />
         <span>
-          I understand trading involves risk of loss, consent to PipAngel using these
+          I understand trading involves risk of loss, consent to PipsAngel using these
           credentials to configure MetaTrader for copy trading, and confirm I am submitting
           one MT5 account for this customer profile.
         </span>

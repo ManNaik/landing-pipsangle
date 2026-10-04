@@ -5,7 +5,7 @@ import { TradesHistory } from "../_components/TradesHistory";
 export async function generateMetadata() {
   return buildPageMetadataFromConfig({
     title: "Trade History",
-    description: "View all lifetime executed trades on your PipAngel account.",
+    description: "View all lifetime executed trades on your PipsAngel account.",
     path: "/trades",
     noIndex: true,
   });

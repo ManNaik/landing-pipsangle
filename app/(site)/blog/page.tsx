@@ -1,7 +1,8 @@
-import { BlogCTA } from "../../components/blog/BlogCTA";
-import { BlogExplorer } from "../../components/blog/BlogExplorer";
-import { BlogHero } from "../../components/blog/BlogHero";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { PageHero, Section } from "../../components/site/ui";
 import { getBlogArticles } from "../../lib/blog";
+import { formatDate } from "../../lib/format";
 import {
   buildBreadcrumbSchema,
   buildPageMetadataFromConfig,
@@ -12,38 +13,41 @@ import {
 
 export async function generateMetadata() {
   return buildPageMetadataFromConfig({
-    title: "Forex Trading Guides and Education",
-    description:
-      "Forex education, trading guides, risk management, automation, MT5 resources, and PipAngel tutorials.",
+    title: "Blog",
+    description: "Articles from PipsAngel about copy trading, MT5 and managing trading risk.",
     path: "/blog",
-    keywords: [
-      "forex trading blog",
-      "forex education",
-      "trading risk management",
-      "MT5 automation",
-      "PipAngel guides",
-    ],
   });
 }
 
 export default async function BlogPage() {
-  const [posts, siteConfig] = await Promise.all([getBlogArticles(), getSiteConfig()]);
-  const siteUrl = resolveSiteUrl(siteConfig);
+  const [articles, siteConfig] = await Promise.all([getBlogArticles(), getSiteConfig()]);
+  if (articles.length === 0) notFound();
 
-  const breadcrumbSchema = buildBreadcrumbSchema(siteUrl, [
+  const siteUrl = resolveSiteUrl(siteConfig);
+  const breadcrumb = buildBreadcrumbSchema(siteUrl, [
     { name: "Home", path: "/" },
     { name: "Blog", path: "/blog" },
   ]);
 
   return (
-    <div className="min-w-0 bg-[#050505]">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbSchema) }}
-      />
-      <BlogHero />
-      <BlogExplorer articles={posts} />
-      <BlogCTA />
-    </div>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumb) }} />
+      <PageHero title="Blog" />
+      <Section className="pt-10 sm:pt-12">
+        <ul className="max-w-3xl divide-y divide-forest-700 border-y border-forest-700">
+          {articles.map((article) => (
+            <li key={article.slug}>
+              <Link href={`/blog/${article.slug}`} className="group block py-6">
+                <span className="text-sm text-sage-400">
+                  {article.category}, {formatDate(article.publishedAt)}
+                </span>
+                <span className="mt-1 block text-xl font-bold group-hover:text-mint-300">{article.title}</span>
+                <span className="mt-2 block leading-relaxed text-sage-300">{article.excerpt}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Section>
+    </>
   );
 }

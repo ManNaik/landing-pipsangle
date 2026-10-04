@@ -50,27 +50,24 @@ function ResetPasswordForm() {
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-16">
-      <p className="text-xs font-medium uppercase tracking-wider text-emerald-500/80">
-        Account recovery
-      </p>
-      <h1 className="mt-2 text-3xl font-bold text-white">Reset password</h1>
-      <p className="mt-2 text-sm text-zinc-400">
+      <h1 className="text-3xl font-bold">Reset password</h1>
+      <p className="mt-3 text-sage-300">
         Paste the reset token from your email and choose a new password.
       </p>
 
       <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
         {error && (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+          <p role="alert" className="rounded-lg border border-coral-400/50 bg-forest-850 px-3 py-2 text-sm text-coral-400">
             {error}
           </p>
         )}
         {message && (
-          <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          <p role="status" className="rounded-lg border border-leaf-600 bg-forest-850 px-3 py-2 text-sm text-mint-300">
             {message}
           </p>
         )}
         <div>
-          <label htmlFor="reset-token" className="block text-sm font-medium text-zinc-300">
+          <label htmlFor="reset-token" className="block text-sm font-semibold text-sage-200">
             Reset token
           </label>
           <input
@@ -79,11 +76,11 @@ function ResetPasswordForm() {
             required
             value={token}
             onChange={(event) => setToken(event.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20"
+            className="mt-1.5 w-full rounded-lg border border-forest-600 bg-forest-850 px-4 py-3 text-base text-paper outline-none focus:border-mint-500"
           />
         </div>
         <div>
-          <label htmlFor="new-password" className="block text-sm font-medium text-zinc-300">
+          <label htmlFor="new-password" className="block text-sm font-semibold text-sage-200">
             New password
           </label>
           <input
@@ -93,11 +90,11 @@ function ResetPasswordForm() {
             minLength={8}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20"
+            className="mt-1.5 w-full rounded-lg border border-forest-600 bg-forest-850 px-4 py-3 text-base text-paper outline-none focus:border-mint-500"
           />
         </div>
         <div>
-          <label htmlFor="confirm-password" className="block text-sm font-medium text-zinc-300">
+          <label htmlFor="confirm-password" className="block text-sm font-semibold text-sage-200">
             Confirm password
           </label>
           <input
@@ -107,21 +104,21 @@ function ResetPasswordForm() {
             minLength={8}
             value={confirm}
             onChange={(event) => setConfirm(event.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20"
+            className="mt-1.5 w-full rounded-lg border border-forest-600 bg-forest-850 px-4 py-3 text-base text-paper outline-none focus:border-mint-500"
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-600 disabled:opacity-60"
+          className="min-h-12 w-full rounded-lg bg-mint-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-leaf-600 disabled:opacity-60"
         >
           {loading ? "Updating…" : "Update password"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-zinc-500">
+      <p className="mt-6 text-center text-sm text-sage-400">
         Need a new link?{" "}
-        <Link href="/forgot-password" className="text-emerald-400 hover:text-emerald-300">
+        <Link href="/forgot-password" className="font-semibold text-mint-400 underline underline-offset-4">
           Request reset
         </Link>
       </p>
@@ -133,7 +130,7 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[50vh] items-center justify-center text-sm text-zinc-400">
+        <div className="flex min-h-[50vh] items-center justify-center text-sm text-sage-400">
           Loading…
         </div>
       }

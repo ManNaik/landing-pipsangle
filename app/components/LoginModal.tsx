@@ -83,19 +83,19 @@ export function LoginModal({
     >
       <button
         type="button"
-        className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm"
+        className="fixed inset-0 bg-forest-950/80 backdrop-blur-sm"
         aria-label="Close login"
         onClick={onClose}
       />
 
       <div
         ref={dialogRef}
-        className="relative z-10 my-auto w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl shadow-black/50 sm:p-8"
+        className="relative z-10 my-auto w-full max-w-md rounded-2xl border border-forest-600 bg-forest-850 p-6 text-paper sm:p-8"
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1.5 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+          className="absolute right-4 top-4 rounded-lg p-1.5 text-sage-400 transition hover:bg-forest-700 hover:text-paper"
           aria-label="Close"
         >
           <svg
@@ -112,30 +112,24 @@ export function LoginModal({
         </button>
 
         <div className="pr-8">
-          <p className="text-xs font-medium uppercase tracking-wider text-emerald-500/80">
-            Welcome back
-          </p>
-          <h2
-            id="login-modal-title"
-            className="mt-2 text-2xl font-bold text-white"
-          >
-            Log in to PipAngel
+          <h2 id="login-modal-title" className="text-2xl font-bold">
+            Log in to PipsAngel
           </h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Access your signals, automation dashboard, and trading performance.
+          <p className="mt-2 text-sm text-sage-300">
+            See your copied trades, settings and subscription.
           </p>
         </div>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           {error && (
-            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            <p role="alert" className="rounded-lg border border-coral-400/50 bg-forest-800 px-3 py-2 text-sm text-coral-400">
               {error}
             </p>
           )}
           <div>
             <label
               htmlFor="login-email"
-              className="block text-sm font-medium text-zinc-300"
+              className="block text-sm font-semibold text-sage-200"
             >
               Email
             </label>
@@ -146,7 +140,7 @@ export function LoginModal({
               autoComplete="email"
               required
               placeholder="you@example.com"
-              className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20"
+              className="mt-1.5 w-full rounded-lg border border-forest-600 bg-forest-900 px-4 py-3 text-base text-paper placeholder:text-sage-500 outline-none transition focus:border-mint-500"
             />
           </div>
 
@@ -154,13 +148,13 @@ export function LoginModal({
             <div className="flex items-center justify-between gap-3">
               <label
                 htmlFor="login-password"
-                className="block text-sm font-medium text-zinc-300"
+                className="block text-sm font-semibold text-sage-200"
               >
                 Password
               </label>
               <Link
                 href="/forgot-password"
-                className="text-xs text-emerald-400 transition hover:text-emerald-300"
+                className="text-sm font-semibold text-mint-400 underline underline-offset-4"
                 onClick={onClose}
               >
                 Forgot password?
@@ -173,32 +167,32 @@ export function LoginModal({
               autoComplete="current-password"
               required
               placeholder="••••••••"
-              className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20"
+              className="mt-1.5 w-full rounded-lg border border-forest-600 bg-forest-900 px-4 py-3 text-base text-paper placeholder:text-sage-500 outline-none transition focus:border-mint-500"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-emerald-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-600 disabled:opacity-60"
+            className="min-h-12 w-full rounded-lg bg-mint-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-leaf-600 disabled:opacity-60"
           >
             {loading ? "Logging in…" : "Log in"}
           </button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-zinc-500">
+        <p className="mt-5 text-center text-sm text-sage-400">
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
-            className="font-medium text-emerald-400 transition hover:text-emerald-300"
+            className="font-semibold text-mint-400 underline underline-offset-4"
             onClick={onClose}
           >
-            Sign up
+            Start a free trial
           </Link>
         </p>
 
         {demo && (
-          <p className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 text-center text-xs text-zinc-500">
+          <p className="mt-4 rounded-lg border border-forest-600 bg-forest-900 px-3 py-2.5 text-center text-xs text-sage-400">
             Dev demo: {demo.user.email} / {demo.user.password}
           </p>
         )}

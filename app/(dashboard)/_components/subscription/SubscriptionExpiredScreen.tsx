@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { isMockApiEnabled } from "../../../lib/mockData";
-import { PRICING_TIERS } from "../../../lib/pricing";
+import { usePricingTiers } from "../../../lib/usePricingTiers";
 import { renewSubscriptionPeriod } from "../../../lib/storeData";
 import type { SubscriptionInfo } from "../../../lib/subscriptionData";
 import type { AuthUser } from "../../../lib/types";
@@ -26,7 +26,7 @@ export function SubscriptionExpiredScreen({
   onRenewed,
 }: SubscriptionExpiredScreenProps) {
   const [renewed, setRenewed] = useState(false);
-  const tier = PRICING_TIERS.find((item) => item.name === subscription.plan);
+  const tier = usePricingTiers().find((item) => item.name === subscription.plan);
 
   const handlePaid = useCallback(() => {
     if (isMockApiEnabled()) {
@@ -90,6 +90,7 @@ export function SubscriptionExpiredScreen({
                 <PayPalCheckout
                   planSlug={tier.id}
                   label={`Renew ${subscription.plan} · $${tier.price} / ${tier.periodLabel}`}
+                  amount={tier.price}
                   onSuccess={handlePaid}
                 />
               )

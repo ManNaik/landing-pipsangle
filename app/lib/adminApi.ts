@@ -8,7 +8,7 @@ function buildAdminProxyUrl(path: string): string {
 async function handleUnauthorized(): Promise<never> {
   expireSession();
   if (typeof window !== "undefined") {
-    window.location.href = "/managementadmin/login";
+    window.location.href = "/admin/login";
   }
   throw new Error("Unauthorized");
 }
@@ -32,12 +32,24 @@ async function adminFetch<T>(path: string, options: RequestInit = {}): Promise<T
     return undefined as T;
   }
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = data as { detail?: string };
-    throw new Error(err.detail ?? `API error: ${res.status}`);
+    throw new Error(errorMessage(data, res.status));
   }
   return data as T;
+}
+
+/** Prefer field errors ("slug: ...") over the generic "Validation error." detail. */
+function errorMessage(data: unknown, status: number): string {
+  const body = (data ?? {}) as { detail?: string; errors?: Record<string, unknown> };
+  const fieldErrors =
+    body.errors && typeof body.errors === "object"
+      ? Object.entries(body.errors).map(([field, messages]) => {
+          const text = Array.isArray(messages) ? messages.join(" ") : typeof messages === "string" ? messages : JSON.stringify(messages);
+          return `${field}: ${text}`;
+        })
+      : [];
+  return fieldErrors.length > 0 ? fieldErrors.join(" ") : body.detail ?? `API error: ${status}`;
 }
 
 export function adminGet<T>(path: string): Promise<T> {

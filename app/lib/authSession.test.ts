@@ -103,13 +103,13 @@ describe("csrf and route protection", () => {
     assert.equal(isProtectedAppPath("/dashboard"), true);
     assert.equal(isProtectedAppPath("/onboarding/start"), true);
     assert.equal(isProtectedAppPath("/pricing"), false);
-    assert.equal(isAdminLoginPath("/managementadmin/login"), true);
+    assert.equal(isAdminLoginPath("/admin/login"), true);
     assert.equal(unauthenticatedRedirect("/dashboard"), "/?login=1&next=%2Fdashboard");
     assert.equal(
-      unauthenticatedRedirect("/managementadmin/signals"),
-      "/managementadmin/login"
+      unauthenticatedRedirect("/admin/signals"),
+      "/admin/login"
     );
-    assert.equal(unauthenticatedRedirect("/managementadmin/login"), null);
+    assert.equal(unauthenticatedRedirect("/admin/login"), null);
     assert.equal(
       toSameOriginProxyPath("/api/proxy", "/broker/connection/?x=1"),
       "/api/proxy/broker/connection?x=1"

@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import { DEMO_CREDENTIALS } from "./demoCredentials";
+import { getDemoCredentials } from "./demoCredentials";
 import { FREE_TRIAL_DAYS } from "./trial";
 import type { AuthUser, LoginResponse } from "./types";
 
@@ -25,24 +25,33 @@ type DemoAccount = {
   trial_ends_at?: string | null;
 };
 
-const DEMO_ACCOUNTS: Record<string, DemoAccount> = {
-  [DEMO_CREDENTIALS.user.email]: {
-    id: "demo-user-001",
-    password: DEMO_CREDENTIALS.user.password,
-    plan: "Premium",
-    is_staff: false,
-    trial_active: true,
-    trial_ends_at: new Date(
-      Date.now() + FREE_TRIAL_DAYS * 24 * 60 * 60 * 1000
-    ).toISOString(),
-  },
-  [DEMO_CREDENTIALS.admin.email]: {
-    id: "admin-user-001",
-    password: DEMO_CREDENTIALS.admin.password,
-    plan: null,
-    is_staff: true,
-  },
-};
+function buildDemoAccounts(): Record<string, DemoAccount> {
+  const demo = getDemoCredentials();
+  if (!demo) return {};
+  const accounts: Record<string, DemoAccount> = {
+    [demo.user.email]: {
+      id: "demo-user-001",
+      password: demo.user.password,
+      plan: "Premium",
+      is_staff: false,
+      trial_active: true,
+      trial_ends_at: new Date(
+        Date.now() + FREE_TRIAL_DAYS * 24 * 60 * 60 * 1000
+      ).toISOString(),
+    },
+  };
+  if (demo.admin) {
+    accounts[demo.admin.email] = {
+      id: "admin-user-001",
+      password: demo.admin.password,
+      plan: null,
+      is_staff: true,
+    };
+  }
+  return accounts;
+}
+
+const DEMO_ACCOUNTS: Record<string, DemoAccount> = buildDemoAccounts();
 
 function getSecret(): string {
   return process.env.MOCK_AUTH_SECRET ?? "pipangel-dev-mock-secret";

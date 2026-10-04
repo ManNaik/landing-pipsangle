@@ -1,91 +1,92 @@
 import Link from "next/link";
-import { DemoBadge } from "../editorial/DemoBadge";
-import { ReadArrow } from "../editorial/ReadArrow";
-import {
-  formatEditorialDate,
-  formatEditorialTime,
-  type NewsArticle,
-} from "../../lib/newsContent";
-import { NewsVisual } from "./NewsVisual";
+import { normalizeBrandText } from "../../lib/brand";
+import { formatDate } from "../../lib/format";
+import { newsListPath } from "../../lib/newsArchive";
+import type { NewsArticle } from "../../lib/newsContent";
+import { ArticleCta } from "./ArticleCta";
+import { NewsletterSignup } from "./NewsletterSignup";
 
-export function NewsArticleView({
-  article,
-  related,
-}: {
-  article: NewsArticle;
-  related: NewsArticle[];
-}) {
+function Byline({ article }: { article: NewsArticle }) {
+  const name = article.authorName ?? article.source;
   return (
-    <div className="min-w-0 bg-[#050505]">
-      <article className="border-b border-white/[0.06] px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+    <p className="mt-6 text-sm leading-relaxed text-sage-400">
+      {article.authorName ? "By " : null}
+      {article.authorName && article.authorUrl ? (
+        <a
+          href={article.authorUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-sage-200 underline decoration-sage-500 underline-offset-4 hover:text-paper"
+        >
+          {name}
+        </a>
+      ) : (
+        <span className="font-semibold text-sage-200">{name}</span>
+      )}
+      {article.authorTitle ? `, ${article.authorTitle}` : null}
+      <span aria-hidden> · </span>
+      <time dateTime={article.publishedAt} className="whitespace-nowrap">
+        {formatDate(article.publishedAt)}
+      </time>
+      {article.readTime ? (
+        <>
+          <span aria-hidden> · </span>
+          <span className="whitespace-nowrap">{article.readTime}</span>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
+export function NewsArticleView({ article, related }: { article: NewsArticle; related: NewsArticle[] }) {
+  return (
+    <>
+      <article className="px-5 pb-16 pt-12 sm:px-8 sm:pt-16">
         <div className="mx-auto max-w-3xl">
-          <Link
-            href="/news"
-            className="inline-flex min-h-[2.5rem] items-center text-sm text-zinc-500 transition hover:text-white"
-          >
-            Back to News
-          </Link>
-          <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.22em] text-emerald-500/85">
-            Forex Market News
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-zinc-400">
+          <nav aria-label="Breadcrumb" className="text-sm text-sage-400">
+            <Link href="/news" className="underline-offset-4 hover:text-paper hover:underline">
+              News
+            </Link>
+            <span aria-hidden> / </span>
+            <Link href={newsListPath(1, article.category)} className="font-semibold text-mint-400 hover:text-mint-300">
               {article.category}
-            </span>
-            {article.isDemo ? <DemoBadge /> : null}
-          </div>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            {article.title}
-          </h1>
-          <p className="mt-4 text-base leading-relaxed text-zinc-400">{article.summary}</p>
-          <dl className="mt-6 grid gap-3 text-xs text-zinc-500 sm:grid-cols-2">
-            <div>
-              <dt className="uppercase tracking-[0.14em]">Published</dt>
-              <dd className="mt-1 text-zinc-300">
-                {formatEditorialDate(article.publishedAt)} ({formatEditorialTime(article.publishedAt)})
-              </dd>
-            </div>
-            <div>
-              <dt className="uppercase tracking-[0.14em]">Updated</dt>
-              <dd className="mt-1 text-zinc-300">{formatEditorialDate(article.updatedAt)}</dd>
-            </div>
-            <div>
-              <dt className="uppercase tracking-[0.14em]">Source</dt>
-              <dd className="mt-1 text-zinc-300">{article.source}</dd>
-            </div>
-            <div>
-              <dt className="uppercase tracking-[0.14em]">Read time</dt>
-              <dd className="mt-1 text-zinc-300">{article.readTime}</dd>
-            </div>
-          </dl>
+            </Link>
+          </nav>
+          <h1 className="mt-4 text-[2rem] font-bold leading-tight tracking-[-0.02em] sm:text-[2.6rem]">{article.title}</h1>
+          <p className="mt-5 text-lg leading-relaxed text-sage-300">{article.summary}</p>
+          <Byline article={article} />
+
+          {article.image ? (
+            <figure className="mt-8">
+              {/* eslint-disable-next-line @next/next/no-img-element -- CMS images can be hosted anywhere, so they skip the image optimizer. */}
+              <img
+                src={article.image}
+                alt={article.imageAlt ?? ""}
+                fetchPriority="high"
+                className="aspect-[16/9] w-full rounded-xl border border-forest-700 object-cover"
+              />
+            </figure>
+          ) : null}
+
+          <div
+            className="prose-site mt-10 border-t border-forest-700 pt-10"
+            dangerouslySetInnerHTML={{ __html: normalizeBrandText(article.content) }}
+          />
+
+          <ArticleCta />
         </div>
-        <div className="mx-auto mt-8 max-w-4xl">
-          <NewsVisual visual={article.visual} featured className="h-52 w-full sm:h-64" />
-        </div>
-        <div
-          className="mx-auto mt-8 max-w-3xl space-y-4 text-sm leading-relaxed text-zinc-400 [&_p]:leading-relaxed [&_strong]:text-amber-200/90"
-          dangerouslySetInnerHTML={{ __html: article.content }}
-        />
       </article>
 
       {related.length > 0 ? (
-        <section className="px-4 py-12 sm:px-6 lg:px-8">
+        <section className="border-t border-forest-700 px-5 py-14 sm:px-8">
           <div className="mx-auto max-w-3xl">
-            <h2 className="text-lg font-semibold text-white">Related Market News</h2>
-            <ul className="mt-5 space-y-4">
+            <h2 className="text-xl font-bold">More market news</h2>
+            <ul className="mt-5 divide-y divide-forest-700 border-y border-forest-700">
               {related.map((item) => (
                 <li key={item.slug}>
-                  <Link
-                    href={`/news/${item.slug}`}
-                    className="group flex items-start justify-between gap-4 border-b border-white/[0.06] py-3"
-                  >
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">
-                        {item.category}
-                      </p>
-                      <p className="mt-1 text-sm font-medium text-white">{item.title}</p>
-                    </div>
-                    <ReadArrow className="mt-1 shrink-0 text-emerald-400" />
+                  <Link href={`/news/${item.slug}`} className="block py-4 hover:text-mint-300">
+                    <span className="text-sm text-sage-400">{formatDate(item.publishedAt)}</span>
+                    <span className="mt-1 block font-semibold">{item.title}</span>
                   </Link>
                 </li>
               ))}
@@ -93,6 +94,8 @@ export function NewsArticleView({
           </div>
         </section>
       ) : null}
-    </div>
+
+      <NewsletterSignup source="news_article" />
+    </>
   );
 }

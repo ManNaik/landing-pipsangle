@@ -1,194 +1,173 @@
+import { safeApiGet } from "./api";
+import { FREE_TRIAL_DAYS } from "./trial";
+import type { ListResponse, PricingPlan } from "./types";
+
 export type PricingTier = {
   id: "basic" | "premium";
   name: string;
   tagline: string;
   price: number;
-  periodDays: 7 | 28;
+  periodDays: number;
   periodLabel: string;
   isPopular: boolean;
   ctaLabel: string;
+  capitalUtilization: string;
   features: Array<{
     label: string;
     included: boolean;
   }>;
 };
 
+const SHARED_FEATURES = [
+  "Trades copied to your IC Markets MT5 account",
+  "A stop loss on every trade",
+  "An MT5 terminal we host for you",
+  "Pause copying at any time",
+  "Trade history in your dashboard",
+  "Email support",
+];
+
+/** Presentation defaults. Live prices and billing periods come from the API. */
 export const PRICING_TIERS: PricingTier[] = [
   {
     id: "basic",
     name: "Basic",
-    tagline:
-      "A simple way to access PipAngel trading intelligence and automated execution with predefined risk controls.",
+    tagline: "Copy trading with a fixed, conservative setting.",
     price: 30,
     periodDays: 7,
     periodLabel: "7 days",
     isPopular: false,
-    ctaLabel: "Start Basic Free Trial",
+    ctaLabel: "Start free trial",
+    capitalUtilization: "Fixed at 25%",
     features: [
-      { label: "Trading system access", included: true },
-      { label: "Automated trade execution", included: true },
-      { label: "Predefined risk settings", included: true },
-      { label: "MT5 integration", included: true },
-      { label: "IC Markets support", included: true },
-      { label: "Trading dashboard", included: true },
-      { label: "Trade monitoring", included: true },
-      { label: "Live support", included: true },
-      { label: "Performance reporting", included: true },
-      { label: "Full automation controls", included: false },
-      { label: "Adjustable risk percentage", included: false },
-      { label: "Advanced risk settings", included: false },
-      { label: "Full leverage control", included: false },
-      { label: "Maximum capital utilization", included: false },
+      ...SHARED_FEATURES.map((label) => ({ label, included: true })),
+      { label: "Capital utilization fixed at 25%", included: true },
     ],
   },
   {
     id: "premium",
     name: "Premium",
-    tagline: "Full control over automation, risk settings, and capital deployment.",
+    tagline: "Everything in Basic, and you choose how much of your balance is used.",
     price: 99,
     periodDays: 28,
     periodLabel: "28 days",
     isPopular: true,
-    ctaLabel: "Start Premium Free Trial",
+    ctaLabel: "Start free trial",
+    capitalUtilization: "Your choice, 10% to 100%",
     features: [
       { label: "Everything in Basic", included: true },
-      { label: "Full automation controls", included: true },
-      { label: "Adjustable risk percentage", included: true },
-      { label: "Advanced risk settings", included: true },
-      { label: "Full leverage control", included: true },
-      { label: "Maximum capital utilization", included: true },
-      { label: "Priority signal delivery", included: true },
-      { label: "Advanced trading controls", included: true },
-      { label: "MT5 integration", included: true },
-      { label: "IC Markets support", included: true },
-      { label: "Trading dashboard", included: true },
-      { label: "Live support", included: true },
-      { label: "Performance reporting", included: true },
+      { label: "Capital utilization adjustable from 10% to 100%", included: true },
+      { label: "One payment covers 28 days", included: true },
     ],
   },
 ];
 
+function parsePeriodDays(label: string | undefined, fallback: number): number {
+  const days = Number.parseInt(label ?? "", 10);
+  return Number.isFinite(days) && days > 0 ? days : fallback;
+}
+
+/** Overlay live API prices and periods onto the local plan descriptions. */
+export function mergePricingTiers(apiPlans: PricingPlan[]): PricingTier[] {
+  if (!apiPlans.length) return PRICING_TIERS;
+  return PRICING_TIERS.map((tier) => {
+    const match = apiPlans.find(
+      (plan) => plan.slug === tier.id || plan.name.toLowerCase() === tier.name.toLowerCase()
+    );
+    if (!match) return tier;
+    const periodDays = parsePeriodDays(match.billing_period, tier.periodDays);
+    return {
+      ...tier,
+      price: Number(match.price),
+      periodDays,
+      periodLabel: `${periodDays} days`,
+      isPopular: match.is_popular,
+    };
+  });
+}
+
+export async function getPricingTiers(): Promise<PricingTier[]> {
+  const data = await safeApiGet<ListResponse<PricingPlan>>("/pricing/plans/", 300);
+  const plans = (data?.results ?? []).filter((plan) => plan.is_active);
+  return mergePricingTiers(plans);
+}
+
 export function getSignupUrl(tier: PricingTier["id"]): string {
-  const plan = PRICING_TIERS.find((t) => t.id === tier);
-  const period = plan?.periodDays === 7 ? "7d" : "28d";
-  return `/signup?plan=${tier}&period=${period}&trial=1`;
+  return `/signup?plan=${tier}`;
 }
 
 export function formatPrice(amount: number): string {
-  return `$${amount}`;
+  return Number.isInteger(amount) ? `$${amount}` : `$${amount.toFixed(2)}`;
 }
 
 export function getDailyPrice(amount: number, periodDays: number): string {
-  const daily = amount / periodDays;
-  return `$${daily.toFixed(2)}/day`;
+  return `$${(amount / periodDays).toFixed(2)}/day`;
 }
 
-export type ComparisonCell = string;
+export function dailyPrice(tier: PricingTier): string {
+  return `$${(tier.price / tier.periodDays).toFixed(2)}`;
+}
 
 export type ComparisonRow = {
   feature: string;
-  basic: ComparisonCell;
-  premium: ComparisonCell;
+  basic: string;
+  premium: string;
 };
 
-export const PLAN_COMPARISON: ComparisonRow[] = [
-  { feature: "Automation", basic: "Predefined", premium: "Full control" },
-  { feature: "Risk settings", basic: "Predefined", premium: "Adjustable" },
-  { feature: "Leverage", basic: "Limited", premium: "Full control" },
-  { feature: "Capital utilization", basic: "Predefined", premium: "Adjustable" },
-  { feature: "Advanced risk controls", basic: "Limited", premium: "Included" },
-  { feature: "Priority execution", basic: "Not included", premium: "Included" },
-  { feature: "MT5", basic: "Included", premium: "Included" },
-  { feature: "IC Markets", basic: "Included", premium: "Included" },
-  { feature: "Dashboard", basic: "Included", premium: "Included" },
-  { feature: "Live support", basic: "Included", premium: "Included" },
-  { feature: "Performance reporting", basic: "Included", premium: "Included" },
-];
+export function buildPlanComparison(tiers: PricingTier[]): ComparisonRow[] {
+  const basic = tiers.find((tier) => tier.id === "basic") ?? PRICING_TIERS[0];
+  const premium = tiers.find((tier) => tier.id === "premium") ?? PRICING_TIERS[1];
+  return [
+    { feature: "Trades copied to your MT5 account", basic: "Yes", premium: "Yes" },
+    { feature: "Stop loss on every trade", basic: "Yes", premium: "Yes" },
+    { feature: "MT5 terminal hosted for you", basic: "Yes", premium: "Yes" },
+    { feature: "Pause copying at any time", basic: "Yes", premium: "Yes" },
+    { feature: "Capital utilization", basic: basic.capitalUtilization, premium: premium.capitalUtilization },
+    {
+      feature: "Price per period",
+      basic: `${formatPrice(basic.price)} for ${basic.periodLabel}`,
+      premium: `${formatPrice(premium.price)} for ${premium.periodLabel}`,
+    },
+    { feature: "Works out per day", basic: dailyPrice(basic), premium: dailyPrice(premium) },
+    { feature: "Support", basic: "Email", premium: "Email" },
+  ];
+}
 
-export const PRICING_BENEFITS = [
-  {
-    id: "automation",
-    eyebrow: "Trading Automation",
-    description:
-      "Automate trade execution through your connected MT5 account while keeping control through the PipAngel dashboard.",
-  },
-  {
-    id: "risk",
-    eyebrow: "Risk Management",
-    description:
-      "Configure how much capital is exposed to each trade and maintain predefined risk limits.",
-  },
-  {
-    id: "dashboard",
-    eyebrow: "Live Dashboard",
-    description:
-      "Monitor trades, account activity, automation status, and controls from one dashboard.",
-  },
-  {
-    id: "support",
-    eyebrow: "Live Support",
-    description:
-      "Get assistance with your account, automation setup, and trading dashboard when you need it.",
-  },
-] as const;
+export type PricingQuestion = { question: string; answer: string };
 
-export const BILLING_STEPS = [
-  {
-    step: "01",
-    title: "Start your 4-day free trial.",
-    description: "Create an account and explore the platform with no payment required to begin.",
-  },
-  {
-    step: "02",
-    title: "Choose Basic or Premium.",
-    description: "Select the plan that matches how much control you want over automation and risk.",
-  },
-  {
-    step: "03",
-    title: "Continue after the trial.",
-    description:
-      "Activate your selected plan with PayPal from your account to keep access after the 4-day trial.",
-  },
-  {
-    step: "04",
-    title: "Manage your subscription from your account.",
-    description: "Review plan status, trial timing, and PayPal checkout from your PipAngel account.",
-  },
-] as const;
-
-export const PRICING_FAQ = [
-  {
-    question: "Is there a free trial?",
-    answer: "Every new account receives a 4-day free trial.",
-  },
-  {
-    question: "What happens after the free trial?",
-    answer:
-      "Trial access lasts 4 days. To continue after the trial, activate Basic or Premium with PayPal from your account. If a plan is not activated, trial access ends.",
-  },
-  {
-    question: "Can I change my plan?",
-    answer:
-      "You can select Basic or Premium from your account and activate the plan with PayPal.",
-  },
-  {
-    question: "Can I cancel?",
-    answer:
-      "Plan selection and PayPal checkout are managed from your PipAngel account. For billing questions, contact support.",
-  },
-  {
-    question: "What payment methods are supported?",
-    answer: "Paid plans are activated through PayPal.",
-  },
-  {
-    question: "Do I need a trading account?",
-    answer:
-      "Automated execution requires a connected IC Markets MetaTrader 5 account. You can still review the dashboard and performance data during your trial.",
-  },
-] as const;
-
-export const PRICING_TRIAL_POINTS = [
-  { value: "4 DAYS", label: "Free trial on every plan" },
-  { value: "FULL ACCESS", label: "Explore the available controls" },
-  { value: "NO COMMITMENT", label: "No payment required to start" },
-] as const;
+export function buildPricingFaq(tiers: PricingTier[], supportEmail: string): PricingQuestion[] {
+  const basic = tiers.find((tier) => tier.id === "basic") ?? PRICING_TIERS[0];
+  const premium = tiers.find((tier) => tier.id === "premium") ?? PRICING_TIERS[1];
+  return [
+    {
+      question: "When does the free trial start?",
+      answer: `When your IC Markets MT5 account is connected and verified, not when you sign up. The trial lasts ${FREE_TRIAL_DAYS} days and you don't pay anything to start.`,
+    },
+    {
+      question: "Does my plan renew automatically?",
+      answer: `No. Each PayPal payment covers one period: ${basic.periodLabel} on Basic or ${premium.periodLabel} on Premium. When the period ends, copying stops until you pay again.`,
+    },
+    {
+      question: "How do I cancel?",
+      answer:
+        "There's nothing to cancel. Don't pay for the next period and copying stops when the current one ends. You can also switch copying off in your dashboard at any time.",
+    },
+    {
+      question: "What happens when the trial ends?",
+      answer:
+        "Copying stops until you pay for a plan from your dashboard. Your setup is kept for a short time, so you can continue without connecting your account again.",
+    },
+    {
+      question: "If I pay early, do I lose the time I have left?",
+      answer: "No. Paying before your current period ends adds the new period on top of it.",
+    },
+    {
+      question: "How do I pay?",
+      answer: "With PayPal, from the subscription page in your dashboard.",
+    },
+    {
+      question: "What if I was charged by mistake?",
+      answer: `Email ${supportEmail} with your account email and the PayPal transaction ID, and we'll look into it.`,
+    },
+  ];
+}

@@ -59,7 +59,7 @@ export async function fetchCurrentUser(): Promise<AuthUser> {
 
 async function postSession(
   path: string,
-  body: Record<string, string | undefined>
+  body: Record<string, unknown>
 ): Promise<AuthSession> {
   const response = await fetch(authUrl(path), {
     method: "POST",
@@ -86,12 +86,22 @@ export async function userLogin(email: string, password: string): Promise<AuthSe
 export async function signup(
   email: string,
   password: string,
-  planSlug?: string
+  planSlug?: string,
+  extras: {
+    acceptedTerms?: boolean;
+    attribution?: Record<string, string>;
+    phoneCountryCode?: string;
+    phoneNumber?: string;
+  } = {}
 ): Promise<AuthSession> {
   return postSession("/api/auth/signup", {
     email,
     password,
     plan_slug: planSlug,
+    accepted_terms: extras.acceptedTerms,
+    attribution: extras.attribution,
+    phone_country_code: extras.phoneCountryCode,
+    phone_number: extras.phoneNumber,
   });
 }
 

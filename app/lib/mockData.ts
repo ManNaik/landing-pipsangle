@@ -31,7 +31,13 @@ export function getMockSiteConfig(): SiteConfig {
   return defaultSiteConfig;
 }
 
-export const mockPerformanceStats: PerformanceStats = {
+type MockPerformanceStats = PerformanceStats & {
+  max_drawdown_percent: number;
+  years_tested: number;
+  years_tested_display: string;
+};
+
+export const mockPerformanceStats: MockPerformanceStats = {
   trades_executed: 1247,
   trades_executed_display: "1,247+",
   win_rate_percent: 72,
@@ -497,7 +503,7 @@ const pageBlocks: Record<string, ContentBlock> = {
   "faq.page": {
     key: "faq.page",
     title: "Frequently Asked Questions",
-    subtitle: "Everything you need to know about PipAngel.",
+    subtitle: "Everything you need to know about PipsAngel.",
     body: "",
     metadata: {},
     updated_at: daysAgo(30),
@@ -512,9 +518,9 @@ const pageBlocks: Record<string, ContentBlock> = {
   },
   "about.page": {
     key: "about.page",
-    title: "About PipAngel",
+    title: "About PipsAngel",
     subtitle: "Professional forex signals and automation.",
-    body: "PipAngel helps traders access institutional-quality signals and optional automation.",
+    body: "PipsAngel helps traders access institutional-quality signals and optional automation.",
     metadata: {},
     updated_at: daysAgo(30),
   },
@@ -522,7 +528,7 @@ const pageBlocks: Record<string, ContentBlock> = {
     key: "terms.page",
     title: "Terms of Service",
     subtitle: "",
-    body: "By using PipAngel you agree to our terms of service. Trading involves risk.",
+    body: "By using PipsAngel you agree to our terms of service. Trading involves risk.",
     metadata: {},
     updated_at: daysAgo(60),
   },

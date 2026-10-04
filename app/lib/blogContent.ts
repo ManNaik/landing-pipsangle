@@ -5,7 +5,7 @@ export const BLOG_CATEGORIES = [
   "Risk Management",
   "Automation",
   "MT5",
-  "PipAngel Guides",
+  "PipsAngel Guides",
   "Market Education",
 ] as const;
 
@@ -34,6 +34,8 @@ export type BlogArticle = {
   excerpt: string;
   intro: string;
   sections: BlogSection[];
+  /** CMS article body. Rendered when there are no structured sections. */
+  contentHtml?: string;
   category: BlogCategory;
   author: string;
   publishedAt: string;
@@ -74,11 +76,11 @@ export const DUMMY_BLOG: BlogArticle[] = [
       {
         id: "why-structure-matters",
         heading: "Why market structure matters",
-        body: "<p>Understanding spreads, liquidity, and session hours helps you read execution quality. PipAngel uses this context when discussing automation on IC Markets MetaTrader 5.</p>",
+        body: "<p>Understanding spreads, liquidity, and session hours helps you read execution quality. PipsAngel uses this context when discussing automation on IC Markets MetaTrader 5.</p>",
       },
     ],
     category: "Forex Basics",
-    author: "PipAngel",
+    author: "PipsAngel",
     publishedAt: daysAgo(3),
     updatedAt: daysAgo(3),
     readTime: "8 min read",
@@ -111,7 +113,7 @@ export const DUMMY_BLOG: BlogArticle[] = [
       },
     ],
     category: "Forex Basics",
-    author: "PipAngel",
+    author: "PipsAngel",
     publishedAt: daysAgo(5),
     updatedAt: daysAgo(5),
     readTime: "6 min read",
@@ -144,7 +146,7 @@ export const DUMMY_BLOG: BlogArticle[] = [
       },
     ],
     category: "Risk Management",
-    author: "PipAngel",
+    author: "PipsAngel",
     publishedAt: daysAgo(8),
     updatedAt: daysAgo(8),
     readTime: "8 min read",
@@ -177,7 +179,7 @@ export const DUMMY_BLOG: BlogArticle[] = [
       },
     ],
     category: "Automation",
-    author: "PipAngel",
+    author: "PipsAngel",
     publishedAt: daysAgo(10),
     updatedAt: daysAgo(10),
     readTime: "7 min read",
@@ -196,7 +198,7 @@ export const DUMMY_BLOG: BlogArticle[] = [
     excerpt:
       "Learn how MT5 connects traders with execution infrastructure and automated strategies.",
     intro:
-      "PipAngel automation is built for IC Markets MetaTrader 5. This demo guide explains what MT5 is and why a connected account is required for execution.",
+      "PipsAngel automation is built for IC Markets MetaTrader 5. This demo guide explains what MT5 is and why a connected account is required for execution.",
     sections: [
       {
         id: "what-mt5-does",
@@ -205,12 +207,12 @@ export const DUMMY_BLOG: BlogArticle[] = [
       },
       {
         id: "pipangel-connection",
-        heading: "How PipAngel uses MT5",
-        body: "<p>When an IC Markets MT5 account is connected, PipAngel can send execution instructions according to the controls set in the dashboard. Without that connection, automation cannot place trades.</p>",
+        heading: "How PipsAngel uses MT5",
+        body: "<p>When an IC Markets MT5 account is connected, PipsAngel can send execution instructions according to the controls set in the dashboard. Without that connection, automation cannot place trades.</p>",
       },
     ],
     category: "MT5",
-    author: "PipAngel",
+    author: "PipsAngel",
     publishedAt: daysAgo(12),
     updatedAt: daysAgo(12),
     readTime: "6 min read",
@@ -243,7 +245,7 @@ export const DUMMY_BLOG: BlogArticle[] = [
       },
     ],
     category: "Trading",
-    author: "PipAngel",
+    author: "PipsAngel",
     publishedAt: daysAgo(14),
     updatedAt: daysAgo(14),
     readTime: "8 min read",
@@ -276,7 +278,7 @@ export const DUMMY_BLOG: BlogArticle[] = [
       },
     ],
     category: "Trading",
-    author: "PipAngel",
+    author: "PipsAngel",
     publishedAt: daysAgo(16),
     updatedAt: daysAgo(16),
     readTime: "5 min read",
@@ -291,9 +293,9 @@ export const DUMMY_BLOG: BlogArticle[] = [
   {
     id: "b8",
     slug: "getting-started-with-pipangel",
-    title: "Getting Started With PipAngel",
+    title: "Getting Started With PipsAngel",
     excerpt:
-      "A beginner's guide to the PipAngel dashboard, automation controls, and account setup.",
+      "A beginner's guide to the PipsAngel dashboard, automation controls, and account setup.",
     intro:
       "This demo walkthrough covers the first steps: create an account, review the dashboard, and connect IC Markets MT5 if you want automated execution.",
     sections: [
@@ -308,8 +310,8 @@ export const DUMMY_BLOG: BlogArticle[] = [
         body: "<p>Automated execution requires an IC Markets MetaTrader 5 account. You can explore the platform first and connect later.</p>",
       },
     ],
-    category: "PipAngel Guides",
-    author: "PipAngel",
+    category: "PipsAngel Guides",
+    author: "PipsAngel",
     publishedAt: daysAgo(18),
     updatedAt: daysAgo(18),
     readTime: "6 min read",
@@ -342,7 +344,7 @@ export const DUMMY_BLOG: BlogArticle[] = [
       },
     ],
     category: "Risk Management",
-    author: "PipAngel",
+    author: "PipsAngel",
     publishedAt: daysAgo(20),
     updatedAt: daysAgo(20),
     readTime: "6 min read",
@@ -375,7 +377,7 @@ export const DUMMY_BLOG: BlogArticle[] = [
       },
     ],
     category: "Automation",
-    author: "PipAngel",
+    author: "PipsAngel",
     publishedAt: daysAgo(22),
     updatedAt: daysAgo(22),
     readTime: "7 min read",

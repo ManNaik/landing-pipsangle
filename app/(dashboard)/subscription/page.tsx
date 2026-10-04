@@ -5,7 +5,7 @@ import SubscriptionPage from "./page.client";
 export async function generateMetadata() {
   return buildPageMetadataFromConfig({
     title: "Subscription",
-    description: "Manage your PipAngel subscription, renewals, and extensions.",
+    description: "Manage your PipsAngel subscription, renewals, and extensions.",
     path: "/dashboard/subscription",
     noIndex: true,
   });

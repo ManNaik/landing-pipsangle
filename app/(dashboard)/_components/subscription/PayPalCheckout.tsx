@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { track } from "../../../lib/analytics";
 import {
   capturePayPalOrder,
   createPayPalOrder,
@@ -54,10 +55,12 @@ function loadPayPalSdk(clientId: string, currency: string): Promise<PayPalNamesp
 type PayPalCheckoutProps = {
   planSlug: string;
   label?: string;
+  /** Price in USD, reported with checkout and purchase events. */
+  amount?: number;
   onSuccess: () => void;
 };
 
-export function PayPalCheckout({ planSlug, label, onSuccess }: PayPalCheckoutProps) {
+export function PayPalCheckout({ planSlug, label, amount, onSuccess }: PayPalCheckoutProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<"loading" | "ready" | "processing" | "unconfigured" | "error">(
     "loading"
@@ -83,12 +86,21 @@ export function PayPalCheckout({ planSlug, label, onSuccess }: PayPalCheckoutPro
         containerRef.current.innerHTML = "";
         buttons = paypal.Buttons({
           style: { layout: "vertical", color: "gold", shape: "rect", label: "paypal", height: 45 },
-          createOrder: () => createPayPalOrder(planSlug),
+          createOrder: () => {
+            track("begin_checkout", { plan: planSlug, value: amount, currency: "USD" });
+            return createPayPalOrder(planSlug);
+          },
           onApprove: async (data) => {
             setState("processing");
             setError(null);
             try {
               await capturePayPalOrder(data.orderID);
+              track("purchase", {
+                transaction_id: data.orderID,
+                plan: planSlug,
+                value: amount,
+                currency: "USD",
+              });
               onSuccess();
             } catch (err) {
               setError(err instanceof Error ? err.message : "Payment capture failed.");
@@ -116,7 +128,7 @@ export function PayPalCheckout({ planSlug, label, onSuccess }: PayPalCheckoutPro
       cancelled = true;
       buttons?.close?.();
     };
-  }, [planSlug, onSuccess]);
+  }, [planSlug, amount, onSuccess]);
 
   if (state === "unconfigured") {
     return (

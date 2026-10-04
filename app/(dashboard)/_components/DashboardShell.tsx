@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import type { AuthUser } from "../../lib/types";
 import { useBrokerConnection } from "../../lib/useBrokerConnection";
 import { BrokerConnectionProvider } from "./BrokerConnectionContext";
@@ -16,12 +15,10 @@ type DashboardShellProps = {
 
 export function DashboardShell({ user, brandName, children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const pathname = usePathname();
-  const onOnboardingRoute = pathname?.startsWith("/onboarding") ?? false;
   const broker = useBrokerConnection({
     userId: user.id,
     userEmail: user.email,
-    autoRedirect: !onOnboardingRoute,
+    autoRedirect: false,
   });
 
   return (

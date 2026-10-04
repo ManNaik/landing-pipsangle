@@ -24,7 +24,7 @@ export function proxy(request: NextRequest) {
   if (authenticated) return NextResponse.next();
 
   if (isAdminAreaPath(pathname)) {
-    return NextResponse.redirect(new URL("/managementadmin/login", request.url));
+    return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
   const loginUrl = new URL("/", request.url);
@@ -48,7 +48,7 @@ export const config = {
     "/trades/:path*",
     "/store",
     "/store/:path*",
-    "/managementadmin",
-    "/managementadmin/:path*",
+    "/admin",
+    "/admin/:path*",
   ],
 };

@@ -19,6 +19,19 @@ export interface FooterLinks {
   legal: NavLink[];
 }
 
+export interface SocialLink {
+  name: string;
+  url: string;
+}
+
+export interface TeamMember {
+  name: string;
+  role: string;
+  bio?: string;
+  photo_url?: string;
+  linkedin_url?: string;
+}
+
 export interface SiteConfig {
   brand_name: string;
   site_url: string;
@@ -31,6 +44,21 @@ export interface SiteConfig {
   footer_links: FooterLinks;
   header_cta_label: string;
   header_cta_action: string;
+  support_email?: string;
+  support_hours?: string;
+  support_response_time?: string;
+  whatsapp_url?: string;
+  telegram_url?: string;
+  social_links?: SocialLink[];
+  legal_name?: string;
+  registration_number?: string;
+  registered_address?: string;
+  governing_law?: string;
+  team_members?: TeamMember[];
+  track_record_url?: string;
+  track_record_provider?: string;
+  broker_signup_url?: string;
+  broker_affiliate_disclosure?: string;
 }
 
 export type TradeDirection = "BUY" | "SELL";
@@ -58,13 +86,17 @@ export interface TradeAccuracy {
 }
 
 export interface PerformanceStats {
+  /** Only true once staff publish a real track record. Older API versions omit it. */
+  published?: boolean;
   trades_executed: number;
   trades_executed_display: string;
   win_rate_percent: number;
   average_pips: number;
-  max_drawdown_percent: number;
-  years_tested: number;
-  years_tested_display: string;
+  wins?: number;
+  losses?: number;
+  net_pips?: number;
+  first_trade_at?: string | null;
+  last_trade_at?: string | null;
   updated_at: string;
 }
 
@@ -133,6 +165,11 @@ export interface NewsArticleListItem {
   featured?: boolean;
   tags?: string[];
   image?: string | null;
+  image_alt?: string;
+  author_name?: string;
+  author_title?: string;
+  author_url?: string;
+  updated_at?: string;
   visual?: string;
   is_demo?: boolean;
 }
@@ -255,6 +292,49 @@ export interface AdminBlogPost {
 
 export interface AdminNewsArticle extends AdminBlogPost {
   category: string;
+  author_name: string;
+  author_title: string;
+  author_url: string;
+  image_url: string;
+  image_alt: string;
+  created_via?: "admin" | "pipeline";
+}
+
+/** A row in the admin post lists (blog and news). Bodies are loaded only in the editor. */
+export interface AdminPostSummary {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  published: boolean;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+  category?: string;
+  author_name?: string;
+  image_url?: string;
+  created_via?: "admin" | "pipeline";
+}
+
+export interface AdminPost extends AdminPostSummary {
+  content: string;
+  author_title?: string;
+  author_url?: string;
+  image_alt?: string;
+}
+
+export type AdminPostCounts = { all: number; published: number; draft: number; pipeline?: number };
+
+export interface AdminPostListResponse extends AdminPaginatedResponse<AdminPostSummary> {
+  counts: AdminPostCounts;
+}
+
+export interface AdminNewsletterSubscriber {
+  id: string;
+  email: string;
+  source: string;
+  confirmed_at: string | null;
+  created_at: string;
 }
 
 export interface AdminFaqItem {
@@ -289,6 +369,21 @@ export interface AdminSiteConfig {
   footer_links: FooterLinks;
   header_cta_label: string;
   header_cta_action: string;
+  support_email: string;
+  support_hours: string;
+  support_response_time: string;
+  whatsapp_url: string;
+  telegram_url: string;
+  social_links: SocialLink[];
+  legal_name: string;
+  registration_number: string;
+  registered_address: string;
+  governing_law: string;
+  team_members: TeamMember[];
+  track_record_url: string;
+  track_record_provider: string;
+  broker_signup_url: string;
+  broker_affiliate_disclosure: string;
   is_active: boolean;
   updated_at: string;
 }
@@ -332,6 +427,7 @@ export interface AdminPerformanceStats {
   years_tested: number;
   years_tested_display: string;
   is_active: boolean;
+  is_published: boolean;
   updated_at: string;
 }
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useState } from "react";
-import { PRICING_TIERS } from "../../lib/pricing";
+import type { PricingTier } from "../../lib/pricing";
+import { usePricingTiers } from "../../lib/usePricingTiers";
 import {
   resolveSubscriptionScreen,
   type SubscriptionInfo,
@@ -187,7 +188,7 @@ function TrialSubscriptionCard({
   isPremium,
 }: {
   subscription: SubscriptionInfo;
-  tier: (typeof PRICING_TIERS)[number];
+  tier: PricingTier;
   isPremium: boolean;
 }) {
   const plan = subscription.plan!;
@@ -283,7 +284,7 @@ function PaidSubscriptionCard({
   onExtend,
 }: {
   subscription: SubscriptionInfo;
-  tier: (typeof PRICING_TIERS)[number];
+  tier: PricingTier;
   isPremium: boolean;
   isBasic: boolean;
   onExtend?: () => void;
@@ -427,6 +428,7 @@ export function ActiveSubscriptionCard({
   onSubscriptionChange,
   initialScreen = null,
 }: ActiveSubscriptionCardProps) {
+  const tiers = usePricingTiers();
   const [forcedScreen, setForcedScreen] = useState<SubscriptionScreen | null>(
     initialScreen
   );
@@ -438,7 +440,7 @@ export function ActiveSubscriptionCard({
   const hasPlan = Boolean(plan);
   const isTrial = subscription.isTrial;
 
-  const tier = PRICING_TIERS.find((t) => t.name === plan);
+  const tier = tiers.find((t) => t.name === plan);
 
   const sectionTitle =
     screen === "expired"

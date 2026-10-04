@@ -1,17 +1,12 @@
 "use client";
 
-import { useCallback, useSyncExternalStore, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { BrokerConnectionStatus } from "../../lib/brokerConnection";
 import { getDashboardStats } from "../../lib/dashboardData";
-import {
-  getPlanLimits,
-  loadTradingSettings,
-  saveTradingSettings,
-  SETTINGS_STORAGE_KEY,
-  type TradingSettings,
-} from "../../lib/settingsData";
-import type { AuthUser } from "../../lib/types";
+import { useBrokerConnectionContext } from "./BrokerConnectionContext";
+import { getPlanLimits, type TradingSettings } from "../../lib/settingsData";
 import { useAuth } from "../../lib/useAuth";
+import { useTradingSettings } from "../../lib/useTradingSettings";
 
 type DashboardStickyHeaderProps = {
   brokerStatus: BrokerConnectionStatus;
@@ -115,30 +110,6 @@ function SyncIcon({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
-const settingsListeners = new Set<() => void>();
-
-function subscribeTradingSettings(onStoreChange: () => void) {
-  settingsListeners.add(onStoreChange);
-  return () => settingsListeners.delete(onStoreChange);
-}
-
-function notifyTradingSettings() {
-  settingsListeners.forEach((listener) => listener());
-}
-
-let settingsCache: { user: AuthUser; storage: string; value: TradingSettings } | null = null;
-
-function readTradingSettingsSnapshot(user: AuthUser | null): TradingSettings | null {
-  if (!user) return null;
-  const storage = localStorage.getItem(SETTINGS_STORAGE_KEY) ?? "";
-  if (settingsCache?.user === user && settingsCache.storage === storage) {
-    return settingsCache.value;
-  }
-  const value = loadTradingSettings(user.plan);
-  settingsCache = { user, storage, value };
-  return value;
-}
-
 function botButtonStyles(botActive: boolean, botEnabled: boolean): string {
   if (botActive) {
     return "border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/15";
@@ -151,26 +122,29 @@ function botButtonStyles(botActive: boolean, botEnabled: boolean): string {
 
 export function DashboardStickyHeader({ brokerStatus }: DashboardStickyHeaderProps) {
   const { user } = useAuth();
-  const settings = useSyncExternalStore(
-    subscribeTradingSettings,
-    () => readTradingSettingsSnapshot(user),
-    () => null
-  );
+  const { connection } = useBrokerConnectionContext();
+  // Same API-backed settings as the Control page, so this switch really pauses copying.
+  const { settings: apiSettings, save } = useTradingSettings(user?.plan ?? null);
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
+  const settings = useMemo<TradingSettings | null>(
+    () =>
+      apiSettings
+        ? { capitalUtilization: apiSettings.capitalUtilization, autoTradeEnabled: apiSettings.autoTradeEnabled }
+        : null,
+    [apiSettings]
+  );
 
   const updateSettings = useCallback(
     (patch: Partial<TradingSettings>) => {
-      if (!user || !settings) return;
-      const next = { ...settings, ...patch };
-      saveTradingSettings(next);
-      notifyTradingSettings();
+      if (!settings) return;
+      void save({ ...settings, ...patch });
     },
-    [settings, user]
+    [save, settings]
   );
 
   if (!user || !settings) return null;
 
-  const stats = getDashboardStats(user);
+  const stats = getDashboardStats(user, connection);
   const limits = getPlanLimits(user.plan);
   const botActive = settings.autoTradeEnabled && stats.automationStatus === "connected";
   const botEnabled = settings.autoTradeEnabled;

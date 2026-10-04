@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# content pipeline working files (briefs, drafts, saved source text)
+/content-pipeline/runs/

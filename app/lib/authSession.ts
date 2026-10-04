@@ -147,13 +147,13 @@ export function isProtectedAppPath(pathname: string): boolean {
 }
 
 export function isAdminAreaPath(pathname: string): boolean {
-  return pathname === "/managementadmin" || pathname.startsWith("/managementadmin/");
+  return pathname === "/admin" || pathname.startsWith("/admin/");
 }
 
 export function isAdminLoginPath(pathname: string): boolean {
   return (
-    pathname === "/managementadmin/login" ||
-    pathname.startsWith("/managementadmin/login/")
+    pathname === "/admin/login" ||
+    pathname.startsWith("/admin/login/")
   );
 }
 
@@ -179,7 +179,7 @@ export function safeInternalPath(value: string | null | undefined): string | nul
 
 export function unauthenticatedRedirect(pathname: string, search = ""): string | null {
   if (isAdminLoginPath(pathname)) return null;
-  if (isAdminAreaPath(pathname)) return "/managementadmin/login";
+  if (isAdminAreaPath(pathname)) return "/admin/login";
   if (!isProtectedAppPath(pathname)) return null;
   const next = safeInternalPath(`${pathname}${search}`);
   const url = new URL("http://session.internal/");

@@ -1,45 +1,43 @@
+import { PageHero, Section } from "../../components/site/ui";
 import { safeApiGet } from "../../lib/api";
-import { buildBreadcrumbSchema, buildPageMetadataFromConfig, getSiteConfig, jsonLdScript, resolveSiteUrl } from "../../lib/seo";
+import { currentCmsBody, privacyHtml } from "../../lib/legal";
+import {
+  buildBreadcrumbSchema,
+  buildPageMetadataFromConfig,
+  getSiteConfig,
+  jsonLdScript,
+  resolveSiteUrl,
+} from "../../lib/seo";
 import type { ContentBlock } from "../../lib/types";
 
 export async function generateMetadata() {
   return buildPageMetadataFromConfig({
-    title: "Privacy Policy",
-    description: "PipAngel privacy policy. How we collect, use, and protect your personal data.",
+    title: "Privacy policy",
+    description:
+      "What personal data PipsAngel collects, including broker connection details, how it's used and protected, and your rights.",
     path: "/privacy",
   });
 }
 
 export default async function PrivacyPage() {
-  const [pageBlock, siteConfig] = await Promise.all([
+  const [block, siteConfig] = await Promise.all([
     safeApiGet<ContentBlock>("/content/blocks/privacy.page/", 3600),
     getSiteConfig(),
   ]);
   const siteUrl = resolveSiteUrl(siteConfig);
-  const breadcrumbSchema = buildBreadcrumbSchema(siteUrl, [
+  const breadcrumb = buildBreadcrumbSchema(siteUrl, [
     { name: "Home", path: "/" },
-    { name: "Privacy Policy", path: "/privacy" },
+    { name: "Privacy policy", path: "/privacy" },
   ]);
+  const body = currentCmsBody(block?.body) ?? privacyHtml(siteConfig);
 
   return (
-    <div className="min-w-0">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbSchema) }}
-      />
-      <section className="px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
-        <article className="mx-auto max-w-3xl">
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            {pageBlock?.title ?? "Privacy Policy"}
-          </h1>
-          <div
-            className="mt-8 space-y-4 text-sm text-zinc-400 [&_p]:leading-relaxed [&_h2]:mt-8 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-white sm:text-base"
-            dangerouslySetInnerHTML={{
-              __html: pageBlock?.body ?? "<p>Privacy policy content goes here.</p>",
-            }}
-          />
-        </article>
-      </section>
-    </div>
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumb) }} />
+      <PageHero title="Privacy policy" />
+      <Section className="pt-10 sm:pt-12">
+        <article className="prose-site max-w-3xl" dangerouslySetInnerHTML={{ __html: body }} />
+      </Section>
+    </>
   );
 }

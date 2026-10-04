@@ -7,7 +7,7 @@ import { type ProfitPeriod } from "../../lib/profitData";
 import { shouldShowWarningBanner } from "../../lib/brokerConnection";
 import {
   getTrialCountdown,
-  isOnboardingInProgress,
+  isDashboardLocked,
   shouldShowPaymentCta,
 } from "../../lib/onboardingStatus";
 import { fetchLiveSignals } from "../../lib/signalsApi";
@@ -19,6 +19,7 @@ import { fetchTrades } from "../../lib/tradesApi";
 import type { ExecutedTrade, Signal } from "../../lib/types";
 import Link from "next/link";
 import { ActiveSubscriptionCard } from "./ActiveSubscriptionCard";
+import { BrokerConnectForm } from "./BrokerConnectForm";
 import { BrokerWarningBanner } from "./BrokerWarningBanner";
 import { useBrokerConnectionContext } from "./BrokerConnectionContext";
 import { DashboardStickyHeader } from "./DashboardStickyHeader";
@@ -127,6 +128,8 @@ export function DashboardContent() {
     openOnboarding,
     showConnectedMessage,
     dismissConnectedMessage,
+    handleSubmit,
+    submitting,
   } = useBrokerConnectionContext();
   const [period, setPeriod] = useState<ProfitPeriod>("7d");
   const [customDates, setCustomDates] = useState(defaultCustomDates);
@@ -193,6 +196,8 @@ export function DashboardContent() {
 
   if (!user || !stats || !metrics || !subscription) return null;
 
+  const reviewLocked = isDashboardLocked(brokerStatus);
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col">
       <DashboardStickyHeader brokerStatus={brokerStatus} />
@@ -206,21 +211,22 @@ export function DashboardContent() {
           <BrokerWarningBanner onConnect={openOnboarding} />
         )}
 
-        {isOnboardingInProgress(brokerStatus) && (
-          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3.5 sm:flex sm:items-center sm:justify-between sm:px-5">
-            <div>
-              <p className="text-sm font-medium text-amber-100">Onboarding in progress</p>
-              <p className="mt-0.5 text-sm text-zinc-400">
-                We&apos;re provisioning and verifying your MT5 account.
-                {connection.error ? ` ${connection.error}` : ""}
-              </p>
-            </div>
-            <Link
-              href="/onboarding"
-              className="mt-3 inline-flex rounded-lg border border-amber-500/30 px-4 py-2 text-sm text-amber-100 transition hover:bg-amber-500/10 sm:mt-0"
-            >
-              View checklist
-            </Link>
+        {isDashboardLocked(brokerStatus) && (
+          <div className="rounded-2xl border border-amber-500/25 bg-zinc-900 px-4 py-4 sm:px-5">
+            <p className="text-sm font-medium text-amber-100">
+              {brokerStatus === "none" ? "Connect your MT5 account" : "Onboarding is under review"}
+            </p>
+            <p className="mt-1 text-sm text-zinc-400">
+              {brokerStatus === "none"
+                ? "Send your MT5 login, server, and password. We connect the account before the trial starts."
+                : "We are connecting your MT5 account. The trial starts once it is connected."}
+              {connection.error ? ` ${connection.error}` : ""}
+            </p>
+            {brokerStatus === "none" || brokerStatus === "failed" ? (
+              <div className="mt-4">
+                <BrokerConnectForm onSubmit={handleSubmit} disabled={submitting} />
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -245,6 +251,9 @@ export function DashboardContent() {
           </div>
         )}
 
+        <div
+          className={`flex flex-col gap-4 ${reviewLocked ? "pointer-events-none select-none blur-md" : ""}`}
+        >
         <HeroMetrics metrics={metrics} />
 
         <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5">
@@ -345,6 +354,7 @@ export function DashboardContent() {
             )}
           </div>
         </section>
+        </div>
 
         <ActiveSubscriptionCard
           user={user}

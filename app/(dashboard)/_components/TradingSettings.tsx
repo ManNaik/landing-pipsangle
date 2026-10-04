@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getCapitalAllocation, getDashboardStats } from "../../lib/dashboardData";
+import { getDashboardStats } from "../../lib/dashboardData";
+import { useBrokerConnectionContext } from "./BrokerConnectionContext";
 import { getSignupUrl } from "../../lib/pricing";
 import {
   clampSettings,
@@ -173,75 +174,20 @@ function StopConfirmDialog({
   );
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function CapitalUtilizationSummary({
-  accountEquity,
-  utilizedAmount,
-  availableAmount,
-  utilizationPercent,
-}: {
-  accountEquity: number;
-  utilizedAmount: number;
-  availableAmount: number;
-  utilizationPercent: number;
-}) {
+function CapitalUtilizationSummary({ utilizationPercent }: { utilizationPercent: number }) {
   const utilizationWidth = Math.min(100, Math.max(0, utilizationPercent));
 
   return (
     <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-4">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">
-            Account capital
-          </p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-white">
-            {formatCurrency(accountEquity)}
-          </p>
-          <p className="mt-0.5 text-xs text-zinc-500">Total equity on connected broker</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-emerald-400/80">
-            Utilized ({utilizationPercent}%)
-          </p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-400">
-            {formatCurrency(utilizedAmount)}
-          </p>
-          <p className="mt-0.5 text-xs text-zinc-500">Allocated to active trading</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-zinc-500">
-            Available
-          </p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-300">
-            {formatCurrency(availableAmount)}
-          </p>
-          <p className="mt-0.5 text-xs text-zinc-500">Not deployed under current cap</p>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-2">
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="font-medium uppercase tracking-[0.12em] text-zinc-500">
-            Capital deployment
-          </span>
-          <span className="tabular-nums text-zinc-400">
-            {formatCurrency(utilizedAmount)} of {formatCurrency(accountEquity)}
-          </span>
-        </div>
-        <div className="relative h-2.5 overflow-hidden rounded-full bg-zinc-800/70">
-          <div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-600/70 to-emerald-400/90 transition-[width] duration-300"
-            style={{ width: `${utilizationWidth}%` }}
-          />
-        </div>
+      <p className="text-sm text-zinc-300">
+        <span className="font-semibold text-emerald-400">{utilizationPercent}%</span> of your account balance is
+        used when sizing copied trades. The other {100 - utilizationPercent}% isn&apos;t used.
+      </p>
+      <div className="mt-3 relative h-2.5 overflow-hidden rounded-full bg-zinc-800/70">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-emerald-500/80 transition-[width] duration-300"
+          style={{ width: `${utilizationWidth}%` }}
+        />
       </div>
     </div>
   );
@@ -501,7 +447,8 @@ export function TradingSettings() {
         autoTrade: planLimits.autoTrade,
       }
     : planLimits;
-  const stats = user ? getDashboardStats(user) : null;
+  const { connection } = useBrokerConnectionContext();
+  const stats = user ? getDashboardStats(user, connection) : null;
 
   const settings = useMemo<TradingSettings | null>(
     () =>
@@ -543,7 +490,6 @@ export function TradingSettings() {
 
   const automationRunning = settings.autoTradeEnabled && stats?.automationStatus === "connected";
   const brokerLabel = stats?.automationBroker ?? "No broker connected";
-  const capitalAllocation = getCapitalAllocation(user, settings.capitalUtilization);
 
   const statusConfig = automationRunning
     ? {
@@ -691,7 +637,6 @@ export function TradingSettings() {
                   <p className="mt-1 text-sm text-zinc-500">{statusConfig.detail}</p>
                   <p className="mt-2 text-xs text-zinc-600">
                     {brokerLabel}
-                    {stats?.automationLastSync ? ` · Synced ${stats.automationLastSync}` : ""}
                   </p>
                 </div>
               </div>
@@ -726,18 +671,13 @@ export function TradingSettings() {
           iconBg="bg-gradient-to-br from-emerald-500/20 to-emerald-900/20"
           label="Allocation"
           title="Capital utilization"
-          description="Set what share of your account equity the bot may deploy into trades."
+          description="Set what share of your account balance is used when copied trades are sized."
           locked={!limits.capital.adjustable}
           lockLabel="Basic cap"
           upgradeMessage={`Basic uses a fixed ${limits.capital.default}% cap. Premium unlocks up to ${PLAN_LIMITS_PREMIUM_CAP}%.`}
         >
           <div className="space-y-5">
-            <CapitalUtilizationSummary
-              accountEquity={capitalAllocation.accountEquity}
-              utilizedAmount={capitalAllocation.utilizedAmount}
-              availableAmount={capitalAllocation.availableAmount}
-              utilizationPercent={capitalAllocation.utilizationPercent}
-            />
+            <CapitalUtilizationSummary utilizationPercent={settings.capitalUtilization} />
 
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
               <ValueGauge

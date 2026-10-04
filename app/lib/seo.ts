@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import { safeApiGet } from "./api";
+import { BRAND_NAME, SITE_URL, normalizeSiteUrl } from "./brand";
+import { sanitizeSiteConfig } from "./defaultSiteConfig";
 import type { SiteConfig } from "./types";
 
-const DEFAULT_SITE_URL = "https://pipangel.com";
-const DEFAULT_BRAND = "PipAngel";
+const DEFAULT_SITE_URL = SITE_URL;
+const DEFAULT_BRAND = BRAND_NAME;
 
-export async function getSiteConfig(): Promise<SiteConfig | null> {
-  return safeApiGet<SiteConfig>("/site-config/", 3600);
+/** Active site config from the CMS, merged over defaults and repaired. Never null. */
+export async function getSiteConfig(): Promise<SiteConfig> {
+  const config = await safeApiGet<Partial<SiteConfig>>("/site-config/", 3600);
+  return sanitizeSiteConfig(config);
 }
 
 export function resolveSiteUrl(config?: SiteConfig | null): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ??
-    config?.site_url ??
-    DEFAULT_SITE_URL
-  ).replace(/\/$/, "");
+  return normalizeSiteUrl(process.env.NEXT_PUBLIC_APP_URL || config?.site_url);
 }
 
 export async function getSiteUrl(): Promise<string> {
@@ -33,7 +33,11 @@ export type PageMetadataOptions = {
   publishedTime?: string;
   modifiedTime?: string;
   noIndex?: boolean;
+  /** Lets crawlers follow links on a page kept out of the index. Defaults to the opposite of noIndex. */
+  follow?: boolean;
   image?: string;
+  authors?: string[];
+  feed?: { url: string; title: string };
 };
 
 export function buildPageMetadata({
@@ -47,7 +51,10 @@ export function buildPageMetadata({
   publishedTime,
   modifiedTime,
   noIndex = false,
+  follow,
   image,
+  authors,
+  feed,
 }: PageMetadataOptions): Metadata {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const canonical = normalizedPath;
@@ -65,6 +72,7 @@ export function buildPageMetadata({
       ? {
           publishedTime,
           ...(modifiedTime ? { modifiedTime } : {}),
+          ...(authors?.length ? { authors } : {}),
         }
       : {}),
   } satisfies Metadata["openGraph"];
@@ -74,7 +82,10 @@ export function buildPageMetadata({
     description,
     keywords,
     metadataBase: new URL(siteUrl),
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      ...(feed ? { types: { "application/rss+xml": [{ url: feed.url, title: feed.title }] } } : {}),
+    },
     openGraph,
     twitter: {
       card: "summary_large_image",
@@ -84,7 +95,7 @@ export function buildPageMetadata({
     },
     robots: {
       index: !noIndex,
-      follow: !noIndex,
+      follow: follow ?? !noIndex,
     },
   };
 }
@@ -106,19 +117,29 @@ export function absoluteUrl(siteUrl: string, path: string): string {
 }
 
 export function jsonLdScript(data: Record<string, unknown> | Record<string, unknown>[]) {
-  return JSON.stringify(data);
+  // CMS text ends up in these blocks; escape "<" so it can't close the script tag.
+  return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 
-export function buildOrganizationSchema(siteUrl: string, brandName: string) {
+export function buildOrganizationSchema(siteUrl: string, config: SiteConfig) {
+  const sameAs = [
+    ...(config.social_links ?? []).map((link) => link.url),
+    config.telegram_url,
+    config.whatsapp_url,
+  ].filter((url): url is string => Boolean(url));
+
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: brandName,
+    name: config.brand_name,
+    ...(config.legal_name ? { legalName: config.legal_name } : {}),
     url: siteUrl,
-    logo: absoluteUrl(siteUrl, "/icon"),
+    logo: absoluteUrl(siteUrl, "/brand/pipsangel-mark-512.png"),
+    ...(config.registered_address ? { address: config.registered_address } : {}),
+    ...(sameAs.length > 0 ? { sameAs } : {}),
     contactPoint: {
       "@type": "ContactPoint",
-      email: "support@pipangel.com",
+      email: config.support_email,
       contactType: "customer support",
     },
   };
@@ -286,7 +307,7 @@ export function buildBlogPostingSchema(
     publisher: {
       "@type": "Organization",
       name: brandName,
-      logo: { "@type": "ImageObject", url: absoluteUrl(siteUrl, "/icon") },
+      logo: { "@type": "ImageObject", url: absoluteUrl(siteUrl, "/brand/pipsangel-mark-512.png") },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     url,
@@ -302,9 +323,22 @@ export function buildNewsArticleSchema(
     slug: string;
     date: string;
     updatedAt?: string;
+    category?: string;
+    image?: string | null;
+    author?: { name: string; title?: string; url?: string | null };
   }
 ) {
   const url = absoluteUrl(siteUrl, `/news/${article.slug}`);
+  const author = article.author
+    ? {
+        "@type": "Person",
+        name: article.author.name,
+        ...(article.author.title ? { jobTitle: article.author.title } : {}),
+        ...(article.author.url ? { url: article.author.url } : {}),
+        worksFor: { "@type": "Organization", name: brandName, url: siteUrl },
+      }
+    : { "@type": "Organization", name: brandName, url: siteUrl };
+
   return {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -312,15 +346,42 @@ export function buildNewsArticleSchema(
     description: article.excerpt,
     datePublished: article.date,
     dateModified: article.updatedAt ?? article.date,
-    author: { "@type": "Organization", name: brandName },
+    author,
     publisher: {
       "@type": "Organization",
       name: brandName,
-      logo: { "@type": "ImageObject", url: absoluteUrl(siteUrl, "/icon") },
+      logo: { "@type": "ImageObject", url: absoluteUrl(siteUrl, "/brand/pipsangel-mark-512.png") },
     },
-    image: absoluteUrl(siteUrl, "/opengraph-image"),
+    image: [article.image ?? absoluteUrl(siteUrl, "/opengraph-image")],
+    ...(article.category ? { articleSection: article.category } : {}),
+    inLanguage: "en",
+    isAccessibleForFree: true,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     url,
+  };
+}
+
+/** Archive and category pages: a collection page listing the articles shown on it. */
+export function buildNewsListSchema(
+  siteUrl: string,
+  page: { name: string; description: string; path: string },
+  articles: Array<{ slug: string; title: string }>
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: page.name,
+    description: page.description,
+    url: absoluteUrl(siteUrl, page.path),
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: articles.map((article, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: absoluteUrl(siteUrl, `/news/${article.slug}`),
+        name: article.title,
+      })),
+    },
   };
 }
 

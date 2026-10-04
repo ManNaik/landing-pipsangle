@@ -98,6 +98,20 @@ export function isOnboardingIncomplete(status: BrokerConnectionStatus): boolean 
   return status === "none" || status === "skipped";
 }
 
+const REVIEW_STATUSES: BrokerConnectionStatus[] = [
+  "none",
+  "pending",
+  "submitted",
+  "provisioning",
+  "operator_action",
+  "verifying",
+  "failed",
+];
+
+export function isDashboardLocked(status: BrokerConnectionStatus): boolean {
+  return REVIEW_STATUSES.includes(status);
+}
+
 export function isOnboardingInProgress(status: BrokerConnectionStatus): boolean {
   return IN_PROGRESS_STATUSES.includes(status);
 }

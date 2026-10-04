@@ -1,18 +1,13 @@
 import { safeApiGet } from "./api";
+import { BRAND_NAME, normalizeBrandText, safeExternalUrl } from "./brand";
 import {
   DUMMY_MARKET_EVENTS,
-  DUMMY_MARKET_SNAPSHOT,
-  DUMMY_NEWS,
   NEWS_CATEGORIES,
   type MarketEvent,
-  type MarketSnapshotItem,
   type NewsArticle,
   type NewsCategory,
-  type NewsVisualId,
 } from "./newsContent";
 import type { NewsArticleDetail, NewsArticleListItem, PaginatedResponse } from "./types";
-
-export type NewsItem = NewsArticleListItem;
 
 type ApiNews = NewsArticleListItem &
   Partial<NewsArticleDetail> & {
@@ -41,96 +36,109 @@ function normalizeCategory(raw: string | undefined): NewsCategory {
   return "Forex";
 }
 
+function readTime(html: string): string {
+  const words = html.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+  return `${Math.max(1, Math.round(words / 220))} min read`;
+}
+
 function mapNews(item: ApiNews): NewsArticle {
-  const dummy = DUMMY_NEWS.find((article) => article.slug === item.slug);
+  const content = item.content ?? "";
   return {
-    id: dummy?.id ?? item.slug,
+    id: item.slug,
     slug: item.slug,
-    title: item.title,
-    summary: item.excerpt,
-    content: item.content ?? dummy?.content ?? `<p>${item.excerpt}</p>`,
+    title: normalizeBrandText(item.title),
+    summary: normalizeBrandText(item.excerpt),
+    content,
     category: normalizeCategory(item.category),
-    source: item.source ?? dummy?.source ?? "PipAngel",
-    sourceUrl: item.source_url ?? dummy?.sourceUrl ?? null,
+    source: item.source ?? BRAND_NAME,
+    sourceUrl: safeExternalUrl(item.source_url),
     publishedAt: item.date,
     updatedAt: item.updated_at ?? item.date,
-    readTime: item.read_time ?? dummy?.readTime ?? "4 min read",
-    image: item.image ?? dummy?.image ?? null,
-    visual: (item.visual as NewsVisualId | undefined) ?? dummy?.visual ?? "grid",
-    tags: item.tags ?? dummy?.tags ?? [],
-    featured: item.featured ?? dummy?.featured ?? false,
+    readTime: content ? readTime(content) : "",
+    image: safeExternalUrl(item.image),
+    imageAlt: item.image_alt?.trim() || "",
+    authorName: item.author_name?.trim() || undefined,
+    authorTitle: item.author_title?.trim() || undefined,
+    authorUrl: safeExternalUrl(item.author_url),
+    visual: "grid",
+    tags: item.tags ?? [],
+    featured: item.featured ?? false,
     status: item.published === false ? "draft" : "published",
-    isDemo: item.is_demo ?? dummy?.isDemo ?? false,
+    isDemo: item.is_demo ?? false,
   };
 }
 
-/**
- * Frontend news access layer.
- * Today this reads the PipAngel news API (or dummy fallback).
- * Later the same functions can keep their signatures while the backend
- * switches from dummy records to aggregated market news.
- */
-export async function getLatestNews(): Promise<NewsArticle[]> {
+/** Articles from the original demo data. The backend cleanup command unpublishes them. */
+const SEED_NEWS_SLUGS = new Set([
+  "forex-market-outlook-march-2025",
+  "usd-strength-and-emerging-market-currencies",
+  "interest-rate-decisions-impact-on-forex",
+]);
+
+function isPublic(article: NewsArticle): boolean {
+  return !article.isDemo && !SEED_NEWS_SLUGS.has(article.slug);
+}
+
+/** Every published article, newest first. Old articles stay listed so they keep earning search traffic. */
+export async function getPublishedNews(): Promise<NewsArticle[]> {
   const data = await safeApiGet<PaginatedResponse<ApiNews>>("/news/", 300);
-  const results = data?.results ?? [];
-  if (results.length === 0) return DUMMY_NEWS;
-  return results.map(mapNews);
-}
-
-export async function getFeaturedNews(): Promise<NewsArticle[]> {
-  const articles = await getLatestNews();
-  const featured = articles.filter((article) => article.featured);
-  return (featured.length > 0 ? featured : articles).slice(0, 3);
-}
-
-export async function getNewsByCategory(category: string): Promise<NewsArticle[]> {
-  const articles = await getLatestNews();
-  if (category === "All") return articles;
-  return articles.filter((article) => article.category === category);
+  return (data?.results ?? []).map(mapNews).filter(isPublic);
 }
 
 export async function getNewsArticle(slug: string): Promise<NewsArticle | null> {
   const detail = await safeApiGet<ApiNews>(`/news/${slug}/`, 300);
-  if (detail) return mapNews(detail);
-  return DUMMY_NEWS.find((article) => article.slug === slug) ?? null;
+  if (!detail) return null;
+  const article = mapNews(detail);
+  return isPublic(article) ? article : null;
 }
 
-export async function getMarketEvents(): Promise<MarketEvent[]> {
-  return DUMMY_MARKET_EVENTS;
+/** Calendar rows from the live feed only; the demo fallback is never shown. */
+export async function getLiveMarketEvents(): Promise<MarketEvent[]> {
+  const events = await getMarketEvents();
+  return events.filter((event) => !event.isDemo);
 }
 
-export async function getMarketSnapshot(): Promise<MarketSnapshotItem[]> {
-  return DUMMY_MARKET_SNAPSHOT;
-}
+type ApiCalendarEvent = {
+  id: string;
+  currency: string;
+  title: string;
+  when_label: string;
+  time: string;
+  actual?: string;
+  previous?: string;
+  consensus?: string;
+  impact?: string;
+  source_url?: string;
+};
 
-export async function getNewsItems(): Promise<NewsArticleListItem[]> {
-  const articles = await getLatestNews();
-  return articles.map((article) => ({
-    slug: article.slug,
-    title: article.title,
-    excerpt: article.summary,
-    date: article.publishedAt,
-    category: article.category,
+type ApiCalendar = {
+  results?: ApiCalendarEvent[];
+};
+
+export function mapCalendarEvents(results: ApiCalendarEvent[]): MarketEvent[] {
+  return results.map((event) => ({
+    id: event.id,
+    currency: event.currency,
+    title: event.title,
+    whenLabel: event.when_label,
+    time: event.time,
+    actual: event.actual ?? "",
+    previous: event.previous ?? "",
+    consensus: event.consensus ?? "",
+    impact: event.impact ?? "",
+    sourceUrl: event.source_url || undefined,
+    isDemo: false,
   }));
 }
 
-export async function getNewsItem(slug: string): Promise<NewsArticleDetail | null> {
-  const article = await getNewsArticle(slug);
-  if (!article) return null;
-  return {
-    slug: article.slug,
-    title: article.title,
-    excerpt: article.summary,
-    date: article.publishedAt,
-    category: article.category,
-    content: article.content,
-    published: article.status === "published",
-    created_at: article.publishedAt,
-    updated_at: article.updatedAt,
-  };
-}
-
-export async function getNewsSlugs(): Promise<string[]> {
-  const items = await getNewsItems();
-  return items.map((item) => item.slug);
+/**
+ * Forex calendar from the stored economic-calendar feed.
+ * The API refreshes that store on its own interval. Dummy rows stay only
+ * when the feed is missing, so the news page still has a preview.
+ */
+export async function getMarketEvents(): Promise<MarketEvent[]> {
+  const data = await safeApiGet<ApiCalendar>("/news/calendar/", 300);
+  const results = data?.results ?? [];
+  if (results.length === 0) return DUMMY_MARKET_EVENTS;
+  return mapCalendarEvents(results);
 }

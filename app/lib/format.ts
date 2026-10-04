@@ -58,6 +58,31 @@ export function formatExecutedTradeProfitLabel(status: ExecutedTradeStatus): str
   return "P/L";
 }
 
+/** Fixed locale and time zone so server and client render the same text. */
+export function formatDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/** Quote a price with the decimals traders expect: JPY pairs 3, gold 2, other majors 5. */
+export function formatQuote(pair: string, value: string | number): string {
+  const number = typeof value === "number" ? value : Number.parseFloat(value);
+  if (!Number.isFinite(number)) return String(value);
+  const symbol = pair.toUpperCase();
+  const digits = symbol.includes("XAU") ? 2 : symbol.endsWith("JPY") ? 3 : 5;
+  return number.toFixed(digits);
+}
+
+export function formatSignedPips(pips: number): string {
+  const rounded = Math.round(pips * 10) / 10;
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded.toLocaleString("en-US")} pips`;
+}
+
 export function formatSignedCurrency(value: number): string {
   const sign = value >= 0 ? "+" : "";
   return `${sign}${new Intl.NumberFormat(undefined, {

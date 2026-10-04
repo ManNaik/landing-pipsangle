@@ -32,7 +32,7 @@ type MetricCardProps = {
 function MetricCard({ label, value, valueClassName = "text-white", hint }: MetricCardProps) {
   return (
     <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-4 sm:p-5">
-      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">{label}</p>
+      <p className="text-sm text-zinc-400">{label}</p>
       <p className={`mt-2 text-2xl font-bold tabular-nums tracking-tight sm:text-[1.65rem] ${valueClassName}`}>
         {value}
       </p>
@@ -41,63 +41,36 @@ function MetricCard({ label, value, valueClassName = "text-white", hint }: Metri
   );
 }
 
+/** Every figure here comes from trades copied into the customer's own account. */
 export function HeroMetrics({ metrics }: HeroMetricsProps) {
-  const livePnLPositive = metrics.todayLivePnL >= 0;
+  const toneFor = (value: number) =>
+    value > 0 ? "text-emerald-400" : value < 0 ? "text-red-400" : "text-white";
 
   return (
     <section aria-label="Account metrics">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <MetricCard
-          label="Total Account Equity"
-          value={formatCurrency(metrics.totalAccountEquity)}
-          hint="Balance + unrealized P&L"
-        />
-        <MetricCard
-          label="Today's Live P&L"
+          label="Open positions P&L"
           value={formatSignedCurrency(metrics.todayLivePnL)}
-          valueClassName={livePnLPositive ? "text-emerald-400" : "text-red-400"}
-          hint="Unrealized from open positions"
+          valueClassName={toneFor(metrics.todayLivePnL)}
+          hint={`${metrics.openTrades} open ${metrics.openTrades === 1 ? "trade" : "trades"}`}
         />
         <MetricCard
-          label="Overall Profit"
-          value={formatCurrency(metrics.overallProfit)}
-          valueClassName="text-emerald-400"
-          hint="All-time cumulative"
+          label="Closed trades P&L"
+          value={formatSignedCurrency(metrics.overallProfit)}
+          valueClassName={toneFor(metrics.overallProfit)}
+          hint="All closed copied trades"
         />
         <MetricCard
-          label="Win Rate"
-          value={`${metrics.winRatePercent}%`}
-          hint="Closed trade success rate"
+          label="Closed trades"
+          value={String(metrics.closedTrades)}
+          hint="Copied into your account"
         />
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1.5">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-            Max Drawdown
-          </span>
-          <span className="text-sm font-semibold tabular-nums text-amber-400/90">
-            {metrics.maxDrawdownPercent}%
-          </span>
-        </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/60 px-3 py-1.5">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-            Margin Level
-          </span>
-          <span
-            className={`text-sm font-semibold tabular-nums ${
-              metrics.marginLevelPercent >= 300
-                ? "text-emerald-400"
-                : metrics.marginLevelPercent >= 150
-                  ? "text-amber-400"
-                  : metrics.marginLevelPercent > 0
-                    ? "text-red-400"
-                    : "text-zinc-500"
-            }`}
-          >
-            {metrics.marginLevelPercent > 0 ? `${metrics.marginLevelPercent}%` : "—"}
-          </span>
-        </div>
+        <MetricCard
+          label="Won"
+          value={metrics.winRatePercent === null ? "—" : `${metrics.winRatePercent}%`}
+          hint={metrics.winRatePercent === null ? "Shown after your first closed trade" : "Of closed trades"}
+        />
       </div>
     </section>
   );

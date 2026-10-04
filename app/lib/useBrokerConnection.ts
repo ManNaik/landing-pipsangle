@@ -20,6 +20,7 @@ import {
   type BrokerConnectionData,
   type BrokerConnectionStatus,
 } from "./brokerConnection";
+import { track, trackOnce } from "./analytics";
 import { isDevDemoEnabled, isMockApiEnabled } from "./env";
 import {
   isOnboardingReady,
@@ -64,6 +65,9 @@ export function useBrokerConnection({
       setShowConnectedMessage(
         isOnboardingReady(next.status) && shouldShowConnectedMessage(userId)
       );
+      if (next.status === "active_trial") {
+        trackOnce(`broker_connected_${userId}`, "broker_connected", { status: next.status });
+      }
       setError(next.error ?? null);
       return next;
     } catch (err) {
@@ -141,6 +145,7 @@ export function useBrokerConnection({
           ? await updateBrokerCredentialsApi(payload)
           : await submitBrokerConnectionApi(payload);
         setConnection(next);
+        track("broker_submitted", { update: isUpdate });
         return next;
       } catch (err) {
         const message =

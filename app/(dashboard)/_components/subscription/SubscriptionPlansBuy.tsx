@@ -4,10 +4,10 @@ import { useCallback, useState } from "react";
 import {
   formatPrice,
   getDailyPrice,
-  PRICING_TIERS,
   type PricingTier,
 } from "../../../lib/pricing";
 import { FREE_TRIAL_DAYS } from "../../../lib/trial";
+import { usePricingTiers } from "../../../lib/usePricingTiers";
 import { PayPalCheckout } from "./PayPalCheckout";
 
 type SubscriptionPlansBuyProps = {
@@ -121,6 +121,7 @@ function PlanBuyCard({
           <PayPalCheckout
             planSlug={tier.id}
             label={`Pay ${formatPrice(tier.price)} · activate ${tier.name}`}
+            amount={tier.price}
             onSuccess={handlePaid}
           />
         </div>
@@ -134,6 +135,7 @@ export function SubscriptionPlansBuy({
   isTrial,
   onPurchased,
 }: SubscriptionPlansBuyProps) {
+  const tiers = usePricingTiers();
   const defaultSlug =
     currentPlan === "Premium"
       ? "premium"
@@ -154,7 +156,7 @@ export function SubscriptionPlansBuy({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {PRICING_TIERS.map((tier) => (
+        {tiers.map((tier) => (
           <PlanBuyCard
             key={tier.id}
             tier={tier}

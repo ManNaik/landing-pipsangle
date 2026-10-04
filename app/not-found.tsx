@@ -1,39 +1,20 @@
-import Link from "next/link";
+import { Footer } from "./components/Footer";
+import { Header } from "./components/Header";
+import { NotFoundContent } from "./components/site/NotFoundContent";
+import { getSiteConfig } from "./lib/seo";
+import { getSiteChrome } from "./lib/siteChrome";
 
-export default function NotFound() {
+/** Unmatched URLs render outside the (site) layout, so the chrome is added here. */
+export default async function NotFound() {
+  const siteConfig = await getSiteConfig();
+  const chrome = await getSiteChrome(siteConfig);
   return (
-    <div className="min-w-0 px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
-      <div className="mx-auto max-w-lg text-center">
-        <p className="text-sm font-medium uppercase tracking-wider text-emerald-500">
-          404
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Page not found
-        </h1>
-        <p className="mt-4 text-base text-zinc-400">
-          The page you are looking for does not exist or may have been moved.
-        </p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href="/"
-            className="inline-flex min-h-[3rem] items-center justify-center rounded-lg bg-emerald-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-emerald-600"
-          >
-            Go to Home
-          </Link>
-          <Link
-            href="/faq"
-            className="inline-flex min-h-[3rem] items-center justify-center rounded-lg border border-zinc-700 px-6 py-3 text-sm font-medium text-white transition hover:bg-zinc-800"
-          >
-            View FAQ
-          </Link>
-          <Link
-            href="/blog"
-            className="inline-flex min-h-[3rem] items-center justify-center rounded-lg border border-zinc-700 px-6 py-3 text-sm font-medium text-white transition hover:bg-zinc-800"
-          >
-            Read Blog
-          </Link>
-        </div>
-      </div>
-    </div>
+    <>
+      <Header brandName={siteConfig.brand_name} nav={chrome.nav} />
+      <main id="main-content">
+        <NotFoundContent />
+      </main>
+      <Footer siteConfig={siteConfig} chrome={chrome} />
+    </>
   );
 }

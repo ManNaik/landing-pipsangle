@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { isMockApiEnabled } from "../../../lib/mockData";
-import { PRICING_TIERS } from "../../../lib/pricing";
+import { usePricingTiers } from "../../../lib/usePricingTiers";
 import { renewSubscriptionPeriod } from "../../../lib/storeData";
 import type { SubscriptionInfo } from "../../../lib/subscriptionData";
 import type { AuthUser } from "../../../lib/types";
@@ -22,7 +22,7 @@ export function SubscriptionRenewScreen({
   onRenewed,
   onExtend,
 }: SubscriptionRenewScreenProps) {
-  const tier = PRICING_TIERS.find((item) => item.name === subscription.plan);
+  const tier = usePricingTiers().find((item) => item.name === subscription.plan);
   const daysLabel =
     subscription.remainingDays === 1
       ? "1 day left"
@@ -88,6 +88,7 @@ export function SubscriptionRenewScreen({
                     ? `Start paid plan · $${tier.price} / ${tier.periodLabel}`
                     : `Renew now · $${tier.price} / ${tier.periodLabel}`
                 }
+                amount={tier.price}
                 onSuccess={handlePaid}
               />
             )}

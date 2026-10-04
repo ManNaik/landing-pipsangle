@@ -8,19 +8,14 @@ type FAQSearchProps = {
 export function FAQSearch({ value, onChange }: FAQSearchProps) {
   return (
     <div className="flex items-center gap-3">
-      <SearchField
-        value={value}
-        onChange={onChange}
-        placeholder="Search questions..."
-        label="Search questions"
-      />
+      <SearchField value={value} onChange={onChange} placeholder="Search, for example “withdraw” or “trial”" label="Search questions" />
       {value ? (
         <button
           type="button"
           onClick={() => onChange("")}
-          className="shrink-0 text-sm text-zinc-500 transition-colors duration-200 hover:text-white"
+          className="shrink-0 text-sm font-semibold text-sage-300 underline underline-offset-4 hover:text-paper"
         >
-          Clear search
+          Clear
         </button>
       ) : null}
     </div>
