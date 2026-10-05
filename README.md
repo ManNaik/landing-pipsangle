@@ -65,7 +65,7 @@ Campaign parameters (`utm_*`, `gclid`, `fbclid` and others), the landing page an
 ```bash
 E2E_BASE_URL=https://pipsangel.com \
 E2E_EMAIL=... E2E_PASSWORD=... \
-E2E_EXPECT_BUILD=1.1.0+2026.09.30-landing-trust \
+E2E_EXPECT_BUILD=1.1.0+2026.10.06-news-index \
 node scripts/browser-dashboard-test.mjs
 ```
 
