@@ -19,6 +19,19 @@ export async function fetchLiveSignals(limit = 20): Promise<Signal[]> {
   }
 }
 
+export async function fetchSignalHistory(limit = 100): Promise<Signal[]> {
+  if (isMockApiEnabled()) {
+    return getMockSignals(limit).results;
+  }
+
+  const safeLimit = Math.min(Math.max(limit, 1), 100);
+  const data = await safeApiGet<ListResponse<Signal>>(
+    `/signals/?limit=${safeLimit}`,
+    30
+  );
+  return data?.results ?? [];
+}
+
 export async function fetchLiveSignalsServer(limit = 20): Promise<Signal[]> {
   if (isMockApiEnabled()) {
     return getMockSignals(limit).results;

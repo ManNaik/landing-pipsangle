@@ -10,7 +10,7 @@ import {
   isDashboardLocked,
   shouldShowPaymentCta,
 } from "../../lib/onboardingStatus";
-import { fetchLiveSignals } from "../../lib/signalsApi";
+import { fetchLiveSignals, fetchSignalHistory } from "../../lib/signalsApi";
 import { useAuth } from "../../lib/useAuth";
 import { useSubscriptionInfo } from "../../lib/useSubscriptionInfo";
 import { useOpenTrades, useTradeStats } from "../../lib/useTrades";
@@ -26,6 +26,7 @@ import { DashboardStickyHeader } from "./DashboardStickyHeader";
 import { ExecutedTradesList } from "./ExecutedTradesList";
 import { HeroMetrics } from "./HeroMetrics";
 import { ProfitChart } from "./ProfitChart";
+import { SignalPerformance } from "./SignalPerformance";
 import { SignalsList } from "./SignalsList";
 
 const PERIOD_OPTIONS: { value: ProfitPeriod; label: string }[] = [
@@ -138,6 +139,7 @@ export function DashboardContent() {
     isMockApiEnabled() ? mockExecutedTrades : []
   );
   const [liveSignals, setLiveSignals] = useState<Signal[]>([]);
+  const [signalHistory, setSignalHistory] = useState<Signal[]>([]);
 
   const { trades: openTrades } = useOpenTrades();
   const { stats: tradeStats } = useTradeStats();
@@ -169,10 +171,19 @@ export function DashboardContent() {
     let cancelled = false;
     async function loadSignals() {
       try {
-        const signals = await fetchLiveSignals(20);
-        if (!cancelled) setLiveSignals(signals);
+        const [signals, history] = await Promise.all([
+          fetchLiveSignals(20),
+          fetchSignalHistory(100),
+        ]);
+        if (!cancelled) {
+          setLiveSignals(signals);
+          setSignalHistory(history);
+        }
       } catch {
-        if (!cancelled) setLiveSignals([]);
+        if (!cancelled) {
+          setLiveSignals([]);
+          setSignalHistory([]);
+        }
       }
     }
     void loadSignals();
@@ -329,6 +340,8 @@ export function DashboardContent() {
             <ProfitChart data={profitData} className="h-48 sm:h-56" />
           </div>
         </section>
+
+        <SignalPerformance signals={signalHistory} />
 
         <section aria-label="Trade activity feeds">
           <FeedTabs active={feedTab} onChange={setFeedTab} />
